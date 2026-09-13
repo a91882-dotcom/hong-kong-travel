@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🇭🇰香港- 3天2夜快閃之旅</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase (雲端多人同步) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Fonts: Zen Maru Gothic & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #F6F8F6;
+      --card-bg: #FFFFFF;
+      --primary-color: #799F8A;
+      --primary-dark: #5B826D;
+      --accent-amber: #E29D62;
+      --accent-rose: #E78895;
+      --accent-sky: #6CB4EE;
+      --text-main: #3C433F;
+      --text-sub: #78857E;
+    }
+
+    body {
+      font-family: 'Zen Maru Gothic', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .dotted-bg {
+      background-image: radial-gradient(#CCD7CE 1.5px, transparent 1.5px);
+      background-size: 16px 16px;
+    }
+
+    .soft-shadow {
+      box-shadow: 0 8px 20px -4px rgba(121, 159, 138, 0.12), 0 3px 8px -2px rgba(0, 0, 0, 0.04);
+    }
+    
+    .soft-shadow-lg {
+      box-shadow: 0 14px 32px -6px rgba(91, 130, 109, 0.18), 0 6px 16px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .animate-pop {
+      animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes pop {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="dotted-bg min-h-screen flex justify-center items-center p-0 sm:p-4">
+
+  <!-- MAIN CONTAINER -->
+  <div id="app" class="w-full max-w-md h-screen sm:h-[912px] bg-[#FAF8F5] sm:rounded-[38px] soft-shadow-lg flex flex-col overflow-hidden relative border-0 sm:border-[7px] border-white/90">
+
+    <!-- TOP APP HEADER BANNER -->
+    <header class="bg-gradient-to-r from-[#799F8A] to-[#678D79] text-white pt-5 pb-4 px-5 rounded-b-[28px] shadow-sm relative z-10 flex-shrink-0">
+      
+      <div class="flex justify-between items-center mb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide flex items-center gap-1">
+            <i class="fa-solid fa-plane-departure text-[10px]"></i> 快閃特攻隊
+          </span>
+          <span class="bg-amber-100/30 text-amber-100 text-[11px] px-2 py-0.5 rounded-full font-bold">10/16 - 10/18</span>
+        </div>
+
+        <div class="flex items-center -space-x-1.5">
+          <div v-for="member in teamMembers" :key="member.name" :title="member.name" class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center font-bold text-[10px] text-white shadow-xs" :style="{ backgroundColor: member.color }">
+            {{ member.name[0] }}
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-end">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
+            🇭🇰 香港行
+          </h1>
+          <p class="text-[11px] text-emerald-100/90 mt-0.5 font-medium">2026 香港 3天2夜 快閃之旅 ✨</p>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button @click="openCloudModal" class="bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5 rounded-full text-[10px] font-bold shadow-sm active:scale-95 transition flex items-center gap-1" title="雲端同步">
+            <i class="fa-solid fa-cloud"></i> {{ cloudStatusLabel }}
+          </button>
+          <button @click="openModalForCurrentTab" class="bg-white text-[#5B826D] hover:bg-emerald-50 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-1">
+            <i class="fa-solid fa-plus text-[11px]"></i> 新增
+          </button>
+        </div>
+      </div>
+
+    </header>
+
+    <main class="flex-1 overflow-y-auto px-4 py-3 relative pb-24 no-scrollbar">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: 每日行程 (ITINERARY TAB) -->
+      <!-- ========================================== -->
+      <section v-if="currentTab === 'itinerary'" class="space-y-3.5 animate-pop">
+
+        <div class="bg-gradient-to-r from-[#E99071] to-[#E28362] rounded-2xl p-3 text-white flex justify-between items-center shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg">
+              ✈️
+            </div>
+            <div>
+              <div class="text-[10px] text-amber-100 font-medium">距離香港特攻出發 (2026/10/16)</div>
+              <div class="text-xs font-bold">倒數計時 Countdown</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xl font-black text-amber-100">{{ daysUntilDeparture }}</span>
+            <span class="text-[11px] ml-0.5 font-bold">天</span>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-[#62A4E0] to-[#488AC8] rounded-2xl p-3.5 text-white shadow-xs relative overflow-hidden">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="flex items-center gap-1 text-[11px] text-blue-100 font-medium">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>香港市區 Hong Kong</span>
+              </div>
+              <h3 class="text-xl font-bold mt-1 flex items-center gap-2">
+                26°C 晴朗舒適
+                <i class="fa-solid fa-sun text-amber-300"></i>
+              </h3>
+            </div>
+            <div class="text-right">
+              <div class="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">降雨機率 10%</div>
+              <div class="text-[10px] text-blue-100 mt-1">氣溫 24°C ~ 28°C</div>
+            </div>
+          </div>
+
+          <div class="mt-2.5 bg-white/95 text-gray-700 rounded-xl p-2 text-xs flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+              👔
+            </div>
+            <div class="text-[11px] leading-tight text-gray-700">
+              <span class="font-bold text-amber-700">穿搭建議：</span> 建議穿著舒適短袖，隨身攜帶薄外套應對室內冷氣。
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 justify-between">
+          <button 
+            v-for="(day, index) in itineraryDays" 
+            :key="index"
+            @click="selectedDayIndex = index"
+            :class="selectedDayIndex === index ? 'bg-[#799F8A] text-white shadow-md scale-[1.02]' : 'bg-white text-gray-600 border border-emerald-900/5 hover:bg-gray-50'"
+            class="flex-1 py-2 rounded-2xl transition-all duration-200 flex flex-col items-center justify-center"
+          >
+            <span class="text-[10px] font-bold uppercase tracking-wider opacity-90">{{ day.dayLabel }}</span>
+            <span class="text-sm font-black mt-0.5">{{ day.dateStr }}</span>
+          </button>
+        </div>
+
+        <div class="flex justify-between items-center pt-1">
+          <h2 class="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar-check text-[#799F8A]"></i> {{ currentDayData.dayLabel }} 預定行程
+          </h2>
+
+          <select v-model="selectedCategoryFilter" class="bg-white border border-gray-200 rounded-xl text-xs px-2 py-1 font-medium text-gray-600 focus:outline-none">
+            <option value="ALL">全部類別</option>
+            <option value="景點">🎡 景點</option>
+            <option value="美食">蛋撻 美食</option>
+            <option value="住宿">🏨 住宿</option>
+            <option value="購物">🛍️ 購物</option>
+            <option value="航班">✈️ 航班</option>
+          </select>
+        </div>
+
+        <div v-if="filteredItinerary.length > 0" class="space-y-3">
+          <div v-for="(item, idx) in filteredItinerary" :key="item.id" class="relative group">
+
+            <div v-if="idx > 0 && item.transport" class="flex justify-center my-1.5">
+              <div class="bg-emerald-50/80 border border-emerald-100 text-emerald-800 text-[10px] font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                <span>{{ item.transport.type === 'walk' ? '🚶' : item.transport.type === 'mtr' ? '🚇' : '🚕' }}</span>
+                <span>{{ item.transport.time }}</span>
+                <span class="text-emerald-300">•</span>
+                <span class="text-emerald-700">{{ item.transport.note }}</span>
+              </div>
+            </div>
+
+            <div v-if="item.category === '航班'" class="bg-white rounded-2xl p-3.5 soft-shadow border border-emerald-900/5 relative overflow-hidden">
+              <div class="bg-gradient-to-r from-sky-500 to-indigo-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-br-lg absolute top-0 left-0">
+                FLIGHT TICKETING 航班資訊
+              </div>
+
+              <div class="mt-3 flex justify-between items-center border-b border-dashed border-gray-200 pb-2.5">
+                <div class="text-center">
+                  <div class="text-lg font-black text-gray-800">{{ item.flightData?.fromCode || 'KHH/TPE' }}</div>
+                  <div class="text-[10px] text-gray-400">{{ item.flightData?.fromCity || '台灣出發' }}</div>
+                  <div class="text-xs font-bold text-sky-600 mt-0.5">{{ item.time.split('-')[0] || '09:15' }}</div>
+                </div>
+
+                <div class="flex-1 px-3 flex flex-col items-center">
+                  <span class="text-[10px] text-gray-400 font-semibold">{{ item.title }}</span>
+                  <div class="w-full flex items-center gap-1 my-0.5">
+                    <div class="h-0.5 flex-1 bg-sky-200"></div>
+                    <i class="fa-solid fa-plane text-sky-500 text-xs"></i>
+                    <div class="h-0.5 flex-1 bg-sky-200"></div>
+                  </div>
+                  <span class="text-[9px] bg-sky-50 text-sky-600 px-1.5 rounded-md font-bold">飛行時間 1.5-2 小時</span>
+                </div>
+
+                <div class="text-center">
+                  <div class="text-lg font-black text-gray-800">{{ item.flightData?.toCode || 'HKG' }}</div>
+                  <div class="text-[10px] text-gray-400">{{ item.flightData?.toCity || '香港赤鱲角' }}</div>
+                  <div class="text-xs font-bold text-sky-600 mt-0.5">{{ item.flightData?.arrivalTime || '11:15' }}</div>
+                </div>
+              </div>
+
+              <div class="pt-2 flex justify-between items-center text-xs text-gray-600">
+                <div class="text-[11px] text-gray-500">
+                  託運: <strong class="text-gray-700">{{ item.flightData?.baggage || '23kg' }}</strong> | {{ item.notes }}
+                </div>
+                <div class="flex items-center gap-1">
+                  <button @click="editItinerary(item)" class="text-emerald-600 hover:bg-emerald-50 px-2 py-1 rounded-lg text-xs"><i class="fa-solid fa-pen"></i></button>
+                  <button @click="deleteItinerary(item.id)" class="text-rose-500 hover:bg-rose-50 px-2 py-1 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="bg-white rounded-2xl p-3.5 soft-shadow border border-emerald-900/5 transition hover:shadow-md">
+              <div class="flex justify-between items-start gap-2">
+                <div class="flex items-start gap-2.5">
+                  <div :class="getCategoryColor(item.category)" class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0 mt-0.5">
+                    {{ getCategoryEmoji(item.category) }}
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[11px] font-bold text-[#5B826D] bg-emerald-50 px-2 py-0.5 rounded-md">{{ item.time }}</span>
+                      <span class="text-[10px] text-gray-400 font-medium">{{ item.category }}</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-800 mt-0.5 leading-snug">{{ item.title }}</h3>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1">
+                  <button @click="moveItinerary(idx, -1)" :disabled="idx === 0" class="w-5 h-5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-500 text-[10px] disabled:opacity-20">▲</button>
+                  <button @click="moveItinerary(idx, 1)" :disabled="idx === filteredItinerary.length - 1" class="w-5 h-5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-500 text-[10px] disabled:opacity-20">▼</button>
+                </div>
+              </div>
+
+              <div v-if="item.hours || item.notes" class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-600 space-y-1">
+                <div v-if="item.hours" class="text-[11px] text-gray-500 flex items-center gap-1">
+                  <i class="fa-regular fa-clock text-emerald-600"></i>
+                  <span>營業時間：{{ item.hours }}</span>
+                </div>
+                <div v-if="item.notes" class="text-[11px] bg-amber-50/60 p-1.5 rounded-lg text-amber-900 flex items-start gap-1">
+                  <i class="fa-regular fa-lightbulb text-amber-500 mt-0.5 text-[11px]"></i>
+                  <span>{{ item.notes }}</span>
+                </div>
+              </div>
+
+              <div class="mt-2.5 flex justify-between items-center pt-2 border-t border-gray-50">
+                <a :href="getGoogleMapsUrl(item.location || item.title)" target="_blank" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1 rounded-xl text-[11px] font-bold transition flex items-center gap-1">
+                  <i class="fa-solid fa-map-location-dot"></i> Google 地圖
+                </a>
+
+                <div class="flex items-center gap-1">
+                  <button @click="editItinerary(item)" class="text-gray-500 hover:bg-gray-100 px-2 py-1 rounded-lg text-xs">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button @click="deleteItinerary(item.id)" class="text-rose-500 hover:bg-rose-50 px-2 py-1 rounded-lg text-xs">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <div v-else class="bg-white rounded-2xl p-6 text-center text-gray-400 soft-shadow">
+          <i class="fa-solid fa-compass text-2xl mb-1 text-emerald-200"></i>
+          <p class="text-xs">尚無此類別行程，點擊右上角「+ 新增」新增！</p>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: 預訂與實用資訊 (INFO & BOOKING TAB) -->
+      <!-- ========================================== -->
+      <section v-if="currentTab === 'info'" class="space-y-3.5 animate-pop">
+
+        <!-- Top Category Navigation Pills (機票 / 住宿 / 租車 / 憑證) -->
+        <div class="grid grid-cols-4 gap-2 text-xs">
+          <button @click="infoCategory = 'flight'" :class="infoCategory === 'flight' ? 'bg-[#799F8A] text-white font-bold shadow-xs' : 'bg-white text-gray-600 hover:bg-gray-50'" class="py-2 px-1 rounded-2xl flex items-center justify-center gap-1 transition">
+            <i class="fa-solid fa-plane"></i> 機票
+          </button>
+          <button @click="infoCategory = 'hotel'" :class="infoCategory === 'hotel' ? 'bg-[#799F8A] text-white font-bold shadow-xs' : 'bg-white text-gray-600 hover:bg-gray-50'" class="py-2 px-1 rounded-2xl flex items-center justify-center gap-1 transition">
+            <i class="fa-solid fa-hotel"></i> 住宿
+          </button>
+          <button @click="infoCategory = 'car'" :class="infoCategory === 'car' ? 'bg-[#799F8A] text-white font-bold shadow-xs' : 'bg-white text-gray-600 hover:bg-gray-50'" class="py-2 px-1 rounded-2xl flex items-center justify-center gap-1 transition">
+            <i class="fa-solid fa-car"></i> 租車
+          </button>
+          <button @click="infoCategory = 'voucher'" :class="infoCategory === 'voucher' ? 'bg-[#799F8A] text-white font-bold shadow-xs' : 'bg-white text-gray-600 hover:bg-gray-50'" class="py-2 px-1 rounded-2xl flex items-center justify-center gap-1 transition">
+            <i class="fa-regular fa-id-card"></i> 憑證
+          </button>
+        </div>
+
+        <!-- 憑證與文件專區 (Vouchers & Passports Section) -->
+        <div v-if="infoCategory === 'voucher'" class="space-y-3">
+          <!-- Search voucher input -->
+          <div class="relative">
+            <input type="text" v-model="voucherSearch" placeholder="搜尋憑證 / 平台..." class="w-full bg-white border border-gray-200 rounded-2xl px-9 py-2 text-xs text-gray-700 shadow-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+          </div>
+
+          <!-- Add Voucher Button -->
+          <button @click="openVoucherModal()" class="w-full bg-[#799F8A] text-white font-bold py-2.5 rounded-2xl shadow-sm hover:bg-[#5B826D] transition flex items-center justify-center gap-1.5 text-xs">
+            <i class="fa-solid fa-plus text-xs"></i> 新增憑證
+          </button>
+
+          <!-- Vouchers Card List -->
+          <div v-if="filteredVouchers.length > 0" class="space-y-2.5">
+            <div v-for="voucher in filteredVouchers" :key="voucher.id" class="bg-white rounded-2xl p-3 soft-shadow border border-emerald-900/5 space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="text-[9px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">{{ voucher.platform || '憑證' }}</span>
+                  <h4 class="text-xs font-bold text-gray-800 mt-1">{{ voucher.title }}</h4>
+                </div>
+                <button @click="deleteVoucher(voucher.id)" class="text-gray-300 hover:text-rose-500 p-1">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+
+              <!-- Attachment Preview / Download -->
+              <div v-if="voucher.file" class="bg-gray-50 p-2 rounded-xl flex items-center justify-between border border-gray-100 text-xs">
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <div class="w-7 h-7 bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                    PDF
+                  </div>
+                  <span class="text-gray-600 font-medium truncate text-[11px]">{{ voucher.fileName || '憑證文件' }}</span>
+                </div>
+                <a :href="voucher.file" :download="voucher.fileName || 'voucher.pdf'" target="_blank" class="bg-emerald-50 text-[#5B826D] hover:bg-emerald-100 px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1 flex-shrink-0">
+                  <i class="fa-solid fa-arrow-down-to-line"></i> 查看/下載
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="bg-white rounded-2xl p-6 text-center text-gray-400 soft-shadow text-xs">
+            <i class="fa-regular fa-folder-open text-2xl mb-1 text-emerald-200"></i>
+            <p>尚無相關憑證，點擊上方「+ 新增憑證」即可上傳！</p>
+          </div>
+        </div>
+
+        <!-- 機票資訊專區 -->
+        <div v-if="infoCategory === 'flight'" class="bg-white rounded-2xl p-3.5 soft-shadow border border-emerald-900/5 space-y-2">
+          <div class="flex justify-between items-center mb-1">
+            <h3 class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-plane text-sky-500"></i> 來回機票預訂資訊
+            </h3>
+            <button @click="openEditFlightModal" class="text-sky-600 hover:bg-sky-50 px-2 py-0.5 rounded-md text-xs font-bold flex items-center gap-1">
+              <i class="fa-solid fa-pen text-[10px]"></i> 編輯
+            </button>
+          </div>
+          <div class="bg-sky-50/70 p-2.5 rounded-xl border border-sky-100 text-xs">
+            <div class="flex justify-between font-bold text-sky-900 mb-1">
+              <span>✈️ 去程：{{ flightInfo.outbound.airline }}</span>
+              <span class="text-sky-700">{{ flightInfo.outbound.date }}</span>
+            </div>
+            <div class="text-[11px] text-gray-600 flex justify-between">
+              <span>{{ flightInfo.outbound.route }}</span>
+              <span>託運 {{ flightInfo.outbound.baggage }} | 代碼: {{ flightInfo.outbound.code }}</span>
+            </div>
+          </div>
+
+          <div class="bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100 text-xs">
+            <div class="flex justify-between font-bold text-indigo-900 mb-1">
+              <span>✈️ 回程：{{ flightInfo.inbound.airline }}</span>
+              <span class="text-indigo-700">{{ flightInfo.inbound.date }}</span>
+            </div>
+            <div class="text-[11px] text-gray-600 flex justify-between">
+              <span>{{ flightInfo.inbound.route }}</span>
+              <span>託運 {{ flightInfo.inbound.baggage }} | 代碼: {{ flightInfo.inbound.code }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 住宿專區 -->
+        <div v-if="infoCategory === 'hotel'" class="bg-white rounded-2xl p-3.5 soft-shadow border border-emerald-900/5">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-hotel text-amber-500"></i> 飯店資訊 Hotel
+            </h3>
+            <button @click="openEditHotelModal" class="text-amber-600 hover:bg-amber-50 px-2 py-0.5 rounded-md text-xs font-bold flex items-center gap-1">
+              <i class="fa-solid fa-pen text-[10px]"></i> 編輯
+            </button>
+          </div>
+          <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-100 space-y-1.5 text-xs">
+            <div class="font-bold text-gray-800">{{ hotelInfo.name }}</div>
+            <div class="text-[11px] text-gray-600"><i class="fa-solid fa-location-dot text-amber-600 mr-1"></i> {{ hotelInfo.address }}</div>
+            <div class="text-[11px] text-gray-600"><i class="fa-solid fa-subway text-amber-600 mr-1"></i> {{ hotelInfo.transport }}</div>
+            <div class="text-[11px] text-gray-600"><i class="fa-solid fa-phone text-amber-600 mr-1"></i> 電話: {{ hotelInfo.phone }}</div>
+            <div class="flex justify-between items-center pt-1.5 border-t border-amber-200/50">
+              <span class="text-[10px] text-amber-800">Check-in: {{ hotelInfo.checkIn }} | Check-out: {{ hotelInfo.checkOut }}</span>
+              <a :href="getGoogleMapsUrl(hotelInfo.name)" target="_blank" class="bg-amber-500 text-white px-2 py-0.5 rounded-lg font-bold text-[10px]">
+                開啟地圖
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 租車專區 -->
+        <div v-if="infoCategory === 'car'" class="bg-white rounded-2xl p-6 text-center text-gray-400 soft-shadow text-xs">
+          <i class="fa-solid fa-car text-2xl mb-1 text-emerald-200"></i>
+          <p>港鐵與巴士交通極為方便，本次快閃行程未預訂租車服務。</p>
+        </div>
+
+        <!-- Live HKD <-> TWD Currency Calculator Card -->
+        <div class="bg-white rounded-2xl p-3.5 soft-shadow border border-emerald-900/5">
+          <div class="flex justify-between items-center mb-2.5">
+            <h3 class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-calculator text-[#799F8A]"></i> 港幣 / 台幣 匯率換算
+            </h3>
+            <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+              匯率 1 HKD ≈ {{ exchangeRate }} TWD
+            </span>
+          </div>
+
+          <div class="grid grid-cols-5 gap-2 items-center">
+            <div class="col-span-2">
+              <label class="block text-[9px] text-gray-400 font-bold uppercase mb-0.5">港幣 HKD</label>
+              <div class="relative">
+                <input type="number" v-model.number="calcHkd" @input="updateFromHkd" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <span class="absolute right-2 top-1.5 text-[10px] font-bold text-gray-400">HK$</span>
+              </div>
+            </div>
+
+            <div class="col-span-1 flex justify-center pt-2">
+              <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+              </div>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-[9px] text-gray-400 font-bold uppercase mb-0.5">新台幣 TWD</label>
+              <div class="relative">
+                <input type="number" v-model.number="calcTwd" @input="updateFromTwd" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <span class="absolute right-2 top-1.5 text-[10px] font-bold text-gray-400">NT$</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency Contacts Card -->
+        <div class="bg-white rounded-2xl p-3.5 soft-shadow border border-emerald-900/5">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-kit-medical text-rose-500"></i> 香港緊急求助電話
+            </h3>
+            <button @click="openEditEmergencyModal" class="text-rose-600 hover:bg-rose-50 px-2 py-0.5 rounded-md text-xs font-bold flex items-center gap-1">
+              <i class="fa-solid fa-pen text-[10px]"></i> 編輯
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <a :href="'tel:' + emergencyContacts.police" class="p-2 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 flex items-center gap-2 font-bold">
+              <i class="fa-solid fa-phone-volume text-rose-500"></i>
+              <div>
+                <div class="text-[9px] text-rose-400">緊急救護 / 報警</div>
+                <div>{{ emergencyContacts.police }}</div>
+              </div>
+            </a>
+            <a :href="'tel:' + emergencyContacts.office.replace(/[^0-[#9]/g, '')" class="p-2 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 flex items-center gap-2 font-bold">
+              <i class="fa-solid fa-building-flag text-blue-500"></i>
+              <div>
+                <div class="text-[9px] text-blue-400">台北經濟文化辦事處</div>
+                <div>{{ emergencyContacts.office }}</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: 花費記帳 (EXPENSE TRACKER TAB) -->
+      <!-- ========================================== -->
+      <section v-if="currentTab === 'expenses'" class="space-y-3.5 animate-pop">
+
+        <div class="bg-gradient-to-br from-[#799F8A] to-[#5B826D] rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
+          <div class="flex justify-between items-center">
+            <div class="text-[10px] text-emerald-100 font-medium tracking-wide">3天2夜 旅行總花費 SPENT TOTAL</div>
+            <button @click="showHkdInExpenses = !showHkdInExpenses" class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">
+              {{ showHkdInExpenses ? '切換 NT$' : '切換 HK$' }}
+            </button>
+          </div>
+
+          <div class="flex items-baseline gap-2 mt-1">
+            <span class="text-2xl sm:text-3xl font-black tracking-tight">
+              {{ showHkdInExpenses ? 'HK$ ' + totalExpensesHkd.toLocaleString() : 'NT$ ' + Math.round(totalExpensesHkd * exchangeRate).toLocaleString() }}
+            </span>
+            <span class="text-xs text-emerald-200 font-bold">
+              ({{ showHkdInExpenses ? '≈ NT$ ' + Math.round(totalExpensesHkd * exchangeRate).toLocaleString() : '≈ HK$ ' + totalExpensesHkd.toLocaleString() }})
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-white/20 text-center text-xs">
+            <div class="bg-white/10 rounded-lg py-1">
+              <div class="text-[9px] text-emerald-100">💵 現金</div>
+              <div class="font-bold">HK$ {{ paymentSummary.cash }}</div>
+            </div>
+            <div class="bg-white/10 rounded-lg py-1">
+              <div class="text-[9px] text-emerald-100">💳 信用卡</div>
+              <div class="font-bold">HK$ {{ paymentSummary.card }}</div>
+            </div>
+            <div class="bg-white/10 rounded-lg py-1">
+              <div class="text-[9px] text-emerald-100">🐧 八達通</div>
+              <div class="font-bold">HK$ {{ paymentSummary.octopus }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-1">
+          <h3 class="text-xs font-bold text-gray-800">消費明細 ({{ expenseList.length }} 筆)</h3>
+          <button @click="openExpenseModal()" class="bg-[#799F8A] text-white px-2.5 py-1 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1">
+            <i class="fa-solid fa-plus text-[10px]"></i> 記一筆
+          </button>
+        </div>
+
+        <div v-if="expenseList.length > 0" class="space-y-2">
+          <div v-for="exp in expenseList" :key="exp.id" class="bg-white p-3 rounded-2xl soft-shadow border border-emerald-900/5 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+              <div :class="getExpenseCategoryBg(exp.category)" class="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0">
+                {{ getExpenseCategoryEmoji(exp.category) }}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-gray-800">{{ exp.title }}</div>
+                <div class="text-[10px] text-gray-400 flex items-center gap-1.5 mt-0.5">
+                  <span>{{ exp.date }}</span>
+                  <span>•</span>
+                  <span>{{ exp.paymentMethod }}</span>
+                  <span v-if="exp.payer" class="bg-emerald-50 text-emerald-700 px-1 rounded font-bold">{{ exp.payer }} 付</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <div class="text-right">
+                <div class="text-xs font-black text-gray-800">HK$ {{ exp.amount }}</div>
+                <div class="text-[9px] text-gray-400">≈ NT$ {{ Math.round(exp.amount * exchangeRate) }}</div>
+              </div>
+              <button @click="deleteExpense(exp.id)" class="text-gray-300 hover:text-rose-500 p-1">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="bg-white rounded-2xl p-6 text-center text-gray-400 soft-shadow">
+          <i class="fa-solid fa-wallet text-2xl mb-1 text-emerald-200"></i>
+          <p class="text-xs">尚無消費紀錄，快點擊「+ 記一筆」吧！</p>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: 準備 & 購物 (PREP & SHOPPING TAB) -->
+      <!-- ========================================== -->
+      <section v-if="currentTab === 'prep'" class="space-y-3.5 animate-pop">
+
+        <div class="flex bg-gray-200/60 p-1 rounded-2xl gap-1 text-xs font-bold">
+          <button @click="prepSubTab = 'todo'" :class="prepSubTab === 'todo' ? 'bg-white text-gray-800 shadow-xs' : 'text-gray-500'" class="flex-1 py-1.5 rounded-xl transition">
+            待辦事項
+          </button>
+          <button @click="prepSubTab = 'packing'" :class="prepSubTab === 'packing' ? 'bg-white text-gray-800 shadow-xs' : 'text-gray-500'" class="flex-1 py-1.5 rounded-xl transition">
+            行李清單
+          </button>
+          <button @click="prepSubTab = 'shopping'" :class="prepSubTab === 'shopping' ? 'bg-white text-gray-800 shadow-xs' : 'text-gray-500'" class="flex-1 py-1.5 rounded-xl transition">
+            必買伴手禮
+          </button>
+        </div>
+
+        <div v-if="prepSubTab === 'todo'" class="space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+            <span>出發前準備 checklist</span>
+            <button @click="addPrepItem('todo')" class="text-emerald-700 font-bold">+ 新增待辦</button>
+          </div>
+          <div v-for="item in todoList" :key="item.id" class="bg-white p-2.5 rounded-2xl soft-shadow border border-emerald-900/5 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" v-model="item.completed" @change="saveData" class="w-4 h-4 rounded text-emerald-600 focus:ring-0">
+              <span :class="{ 'line-through text-gray-400': item.completed }" class="font-medium text-gray-700">{{ item.text }}</span>
+            </div>
+            <select v-model="item.assignee" @change="saveData" class="text-[10px] bg-gray-50 border rounded px-1.5 py-0.5 text-gray-600">
+              <option value="">全體</option>
+              <option v-for="m in teamMembers" :key="m.name" :value="m.name">{{ m.name }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="prepSubTab === 'packing'" class="space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+            <span>行李打包清單</span>
+            <button @click="addPrepItem('packing')" class="text-emerald-700 font-bold">+ 新增行李</button>
+          </div>
+          <div v-for="item in packingList" :key="item.id" class="bg-white p-2.5 rounded-2xl soft-shadow border border-emerald-900/5 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" v-model="item.completed" @change="saveData" class="w-4 h-4 rounded text-emerald-600 focus:ring-0">
+              <span :class="{ 'line-through text-gray-400': item.completed }" class="font-medium text-gray-700">{{ item.text }}</span>
+            </div>
+            <button @click="deletePrepItem('packing', item.id)" class="text-gray-300 hover:text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+
+        <div v-if="prepSubTab === 'shopping'" class="space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+            <span>香港必買購物願望清單</span>
+            <button @click="addPrepItem('shopping')" class="text-emerald-700 font-bold">+ 新增必買</button>
+          </div>
+          <div v-for="item in shoppingWishlist" :key="item.id" class="bg-white p-3 rounded-2xl soft-shadow border border-emerald-900/5 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+              <input type="checkbox" v-model="item.completed" @change="saveData" class="w-4 h-4 rounded text-emerald-600 focus:ring-0">
+              <div>
+                <div :class="{ 'line-through text-gray-400': item.completed }" class="font-bold text-gray-800">{{ item.text }}</div>
+                <div class="text-[10px] text-gray-400" v-if="item.price">預估 HK$ {{ item.price }}</div>
+              </div>
+            </div>
+            <button @click="deletePrepItem('shopping', item.id)" class="text-gray-300 hover:text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 5: 日誌 (JOURNAL TAB) -->
+      <!-- ========================================== -->
+      <section v-if="currentTab === 'journal'" class="space-y-3.5 animate-pop">
+
+        <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+          <span>香港之旅隨記 & 相片日誌</span>
+          <button @click="openJournalModal()" class="bg-[#799F8A] text-white px-2.5 py-1 rounded-xl text-xs font-bold shadow-xs">
+            + 寫日誌
+          </button>
+        </div>
+
+        <div v-if="journalEntries.length > 0" class="space-y-3">
+          <div v-for="entry in journalEntries" :key="entry.id" class="bg-white p-3.5 rounded-2xl soft-shadow border border-emerald-900/5 space-y-2">
+            
+            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center" :style="{ backgroundColor: getMemberColor(entry.author) }">
+                  {{ entry.author ? entry.author[0] : '隊' }}
+                </div>
+                <span class="font-bold text-xs text-gray-800">{{ entry.author || '隊員' }}</span>
+              </div>
+              <span class="text-[10px] font-bold text-[#5B826D] bg-emerald-50 px-2 py-0.5 rounded-full">{{ entry.date }}</span>
+            </div>
+
+            <p class="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line">{{ entry.content }}</p>
+
+            <div v-if="entry.image" class="rounded-xl overflow-hidden max-h-48 bg-gray-100 border border-gray-100 mt-2">
+              <img :src="entry.image" class="w-full h-full object-cover">
+            </div>
+
+            <div class="flex justify-end pt-1">
+              <button @click="deleteJournal(entry.id)" class="text-gray-300 hover:text-rose-500 text-xs">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="bg-white rounded-2xl p-6 text-center text-gray-400 soft-shadow text-xs">
+          <i class="fa-solid fa-book-open text-2xl mb-1 text-emerald-200"></i>
+          <p>旅途中寫下記錄，留下美麗回憶！</p>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <nav class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-1 py-1.5 flex justify-around items-center z-20 shadow-lg">
+      <button @click="currentTab = 'itinerary'" :class="currentTab === 'itinerary' ? 'text-[#5B826D] font-black scale-105' : 'text-gray-400 hover:text-gray-600'" class="flex flex-col items-center gap-0.5 py-1 px-2 transition">
+        <i class="fa-solid fa-map-location-dot text-sm"></i>
+        <span class="text-[9px]">行程</span>
+      </button>
+
+      <button @click="currentTab = 'info'" :class="currentTab === 'info' ? 'text-[#5B826D] font-black scale-105' : 'text-gray-400 hover:text-gray-600'" class="flex flex-col items-center gap-0.5 py-1 px-2 transition">
+        <i class="fa-solid fa-circle-info text-sm"></i>
+        <span class="text-[9px]">資訊/機票</span>
+      </button>
+
+      <button @click="currentTab = 'expenses'" :class="currentTab === 'expenses' ? 'text-[#5B826D] font-black scale-105' : 'text-gray-400 hover:text-gray-600'" class="flex flex-col items-center gap-0.5 py-1 px-2 transition">
+        <i class="fa-solid fa-wallet text-sm"></i>
+        <span class="text-[9px]">記帳</span>
+      </button>
+
+      <button @click="currentTab = 'prep'" :class="currentTab === 'prep' ? 'text-[#5B826D] font-black scale-105' : 'text-gray-400 hover:text-gray-600'" class="flex flex-col items-center gap-0.5 py-1 px-2 transition">
+        <i class="fa-solid fa-clipboard-list text-sm"></i>
+        <span class="text-[9px]">準備/必買</span>
+      </button>
+
+      <button @click="currentTab = 'journal'" :class="currentTab === 'journal' ? 'text-[#5B826D] font-black scale-105' : 'text-gray-400 hover:text-gray-600'" class="flex flex-col items-center gap-0.5 py-1 px-2 transition">
+        <i class="fa-solid fa-book-open text-sm"></i>
+        <span class="text-[9px]">日誌</span>
+      </button>
+    </nav>
+
+
+    <!-- CLOUD ROOM MODAL -->
+    <div v-if="showCloudModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-[60]">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <div><h3 class="font-bold text-gray-800 text-sm flex items-center gap-1.5"><i class="fa-solid fa-cloud text-[#799F8A]"></i> 雲端旅行房間</h3><p class="text-[10px] text-gray-400 mt-0.5">同一房間的成員會看到相同的行程、記帳與日誌</p></div>
+          <button @click="showCloudModal = false" class="text-gray-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="bg-emerald-50 rounded-2xl p-3 text-xs space-y-2">
+          <div class="flex justify-between"><span class="text-gray-500">目前狀態</span><strong :class="cloudReady ? 'text-emerald-700' : 'text-amber-700'">{{ cloudReady ? '☁️ 已連線同步' : (cloudBusy ? '⏳ 連線中…' : '📱 僅本機模式') }}</strong></div>
+          <div class="flex justify-between"><span class="text-gray-500">旅行房間代碼</span><strong class="text-[#5B826D]">{{ roomId }}</strong></div>
+          <div v-if="cloudError" class="mt-2 rounded-xl bg-red-50 border border-red-100 p-2 text-[10px] text-red-700 leading-relaxed">
+            <b>連線失敗：</b>{{ cloudError }}
+          </div>
+        </div>
+        <div><label class="block font-bold text-gray-600 mb-1 text-xs">加入 / 建立旅行房間</label><div class="flex gap-2"><input v-model="roomIdInput" maxlength="32" placeholder="例如 HK2026" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs uppercase focus:outline-none"><button @click="connectCloudRoom" class="bg-[#799F8A] text-white px-3 rounded-xl text-xs font-bold">連線</button></div><p class="text-[9px] text-gray-400 mt-1.5">把同一個房間代碼給朋友，他們就能加入同一份旅遊資料。</p></div>
+        <div class="bg-amber-50 border border-amber-100 rounded-2xl p-3 text-[10px] text-amber-800 leading-relaxed"><i class="fa-solid fa-circle-info mr-1"></i>{{ cloudReady ? '同一房間代碼的旅伴會即時同步資料。' : '若無法連線，這裡會直接顯示原因，不需要開 F12。' }}</div>
+        <div class="pt-1 flex gap-2"><button @click="copyRoomLink" class="flex-1 bg-blue-50 text-blue-600 py-2 rounded-xl font-bold text-xs"><i class="fa-solid fa-link mr-1"></i>複製邀請連結</button><button @click="showCloudModal = false" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold text-xs">關閉</button></div>
+      </div>
+    </div>
+
+    <!-- MODALS SECTION -->
+    
+    <!-- 1. Itinerary Modal -->
+    <div v-if="showItineraryModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">{{ editingItineraryId ? '編輯行程' : '新增行程' }}</h3>
+          <button @click="showItineraryModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveItinerary" class="space-y-2.5 text-xs">
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">行程地點 / 名稱 *</label>
+            <input type="text" v-model="itineraryForm.title" required placeholder="例如: Bakehouse 酸種蛋撻" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">分類 *</label>
+              <select v-model="itineraryForm.category" class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="景點">🎡 景點</option>
+                <option value="美食">蛋撻 美食</option>
+                <option value="住宿">🏨 住宿</option>
+                <option value="購物">🛍️ 購物</option>
+                <option value="航班">✈️ 航班</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">時間</label>
+              <input type="text" v-model="itineraryForm.time" placeholder="例如: 12:30" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">營業時間 / 開放時間</label>
+            <input type="text" v-model="itineraryForm.hours" placeholder="例如: 08:00 - 21:00" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">特色 & 備註</label>
+            <textarea v-model="itineraryForm.notes" rows="2" placeholder="推薦餐點、注意事項..." class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"></textarea>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showItineraryModal = false" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-[#799F8A] text-white py-2 rounded-xl font-bold hover:bg-[#5B826D]">儲存行程</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Expense Modal -->
+    <div v-if="showExpenseModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">新增消費記帳</h3>
+          <button @click="showExpenseModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveExpense" class="space-y-2.5 text-xs">
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">消費項目 *</label>
+            <input type="text" v-model="expenseForm.title" required placeholder="例如: 華星冰室早餐" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">金額 (HKD) *</label>
+              <input type="number" step="any" v-model.number="expenseForm.amount" required placeholder="0.0" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">類別</label>
+              <select v-model="expenseForm.category" class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="餐飲">蛋撻 餐飲</option>
+                <option value="交通">🚇 交通</option>
+                <option value="住宿">🏨 住宿</option>
+                <option value="門票">🎟️ 門票</option>
+                <option value="購物">🛍️ 購物</option>
+                <option value="雜項">📌 雜項</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">支付方式</label>
+              <select v-model="expenseForm.paymentMethod" class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="現金">💵 現金</option>
+                <option value="信用卡">💳 信用卡</option>
+                <option value="八達通">🐧 八達通</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">付款隊員</label>
+              <select v-model="expenseForm.payer" class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <option v-for="m in teamMembers" :key="m.name" :value="m.name">{{ m.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showExpenseModal = false" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-[#799F8A] text-white py-2 rounded-xl font-bold hover:bg-[#5B826D]">儲存記帳</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 3. Voucher Modal (新增憑證彈窗) -->
+    <div v-if="showVoucherModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">新增證件與憑證</h3>
+          <button @click="showVoucherModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveVoucher" class="space-y-2.5 text-xs">
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">憑證 / 票券名稱 *</label>
+            <input type="text" v-model="voucherForm.title" required placeholder="例如: 機票_凱文 / 迪士尼門票" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">訂購平台 / 種類</label>
+            <input type="text" v-model="voucherForm.platform" placeholder="例如: 德威官網 / Klook / 護照" class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">上傳憑證檔案 (PDF 或 圖片)</label>
+            <input type="file" @change="handleVoucherFile" accept="application/pdf,image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-50 file:text-emerald-700">
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showVoucherModal = false" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-[#799F8A] text-white py-2 rounded-xl font-bold hover:bg-[#5B826D]">儲存憑證</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 4. Travel Journal Entry Modal -->
+    <div v-if="showJournalModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">撰寫旅途日誌</h3>
+          <button @click="showJournalModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveJournal" class="space-y-2.5 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">記錄者</label>
+              <select v-model="journalForm.author" class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs">
+                <option v-for="m in teamMembers" :key="m.name" :value="m.name">{{ m.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-gray-600 mb-0.5">日期</label>
+              <select v-model="journalForm.date" class="w-full border border-gray-200 rounded-xl px-2 py-1.5 text-xs">
+                <option value="10/16 (五)">10/16 (五)</option>
+                <option value="10/17 (六)">10/17 (六)</option>
+                <option value="10/18 (日)">10/18 (日)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">日誌心得 *</label>
+            <textarea v-model="journalForm.content" required rows="3" placeholder="今天在迪士尼超開心！魔雪奇緣世界超讚..." class="w-full border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"></textarea>
+          </div>
+
+          <div>
+            <label class="block font-bold text-gray-600 mb-0.5">上傳相片預覽</label>
+            <input type="file" @change="handleJournalImage" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-50 file:text-emerald-700">
+            <div v-if="journalForm.image" class="mt-2 h-20 rounded-xl overflow-hidden border">
+              <img :src="journalForm.image" class="w-full h-full object-cover">
+            </div>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showJournalModal = false" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-[#799F8A] text-white py-2 rounded-xl font-bold hover:bg-[#5B826D]">發布筆記</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 5. Edit Flight Info Modal -->
+    <div v-if="showFlightModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">編輯來回機票資訊</h3>
+          <button @click="showFlightModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveFlightInfo" class="space-y-3 text-xs">
+          <div class="border-b border-dashed pb-2">
+            <span class="font-bold text-sky-700">✈️ 去程機票</span>
+            <div class="mt-1 space-y-1.5">
+              <div>
+                <label class="block text-[10px] text-gray-500 font-bold">航空公司 / 班機</label>
+                <input type="text" v-model="flightForm.outbound.airline" required class="w-full border rounded-lg px-2 py-1 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">日期</label>
+                  <input type="text" v-model="flightForm.outbound.date" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">訂位代碼</label>
+                  <input type="text" v-model="flightForm.outbound.code" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">航線與時間</label>
+                  <input type="text" v-model="flightForm.outbound.route" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">託運重量</label>
+                  <input type="text" v-model="flightForm.outbound.baggage" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="font-bold text-indigo-700">✈️ 回程機票</span>
+            <div class="mt-1 space-y-1.5">
+              <div>
+                <label class="block text-[10px] text-gray-500 font-bold">航空公司 / 班機</label>
+                <input type="text" v-model="flightForm.inbound.airline" required class="w-full border rounded-lg px-2 py-1 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">日期</label>
+                  <input type="text" v-model="flightForm.inbound.date" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">訂位代碼</label>
+                  <input type="text" v-model="flightForm.inbound.code" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">航線與時間</label>
+                  <input type="text" v-model="flightForm.inbound.route" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-gray-500 font-bold">託運重量</label>
+                  <input type="text" v-model="flightForm.inbound.baggage" required class="w-full border rounded-lg px-2 py-1 text-xs">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showFlightModal = false" class="flex-1 bg-gray-100 text-gray-600 py-1.5 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-sky-600 text-white py-1.5 rounded-xl font-bold hover:bg-sky-700">儲存機票</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 6. Edit Hotel Info Modal -->
+    <div v-if="showHotelModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">編輯飯店資訊</h3>
+          <button @click="showHotelModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveHotelInfo" class="space-y-2 text-xs">
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold">飯店名稱</label>
+            <input type="text" v-model="hotelForm.name" required class="w-full border rounded-lg px-2 py-1 text-xs">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold">地址</label>
+            <input type="text" v-model="hotelForm.address" required class="w-full border rounded-lg px-2 py-1 text-xs">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold">交通方式</label>
+            <input type="text" v-model="hotelForm.transport" required class="w-full border rounded-lg px-[#2] py-1 text-xs">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold">聯絡電話</label>
+            <input type="text" v-model="hotelForm.phone" required class="w-full border rounded-lg px-2 py-1 text-xs">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-gray-500 font-bold">Check-in 時間</label>
+              <input type="text" v-model="hotelForm.checkIn" required class="w-full border rounded-lg px-2 py-1 text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-500 font-bold">Check-out 時間</label>
+              <input type="text" v-model="hotelForm.checkOut" required class="w-full border rounded-lg px-2 py-1 text-xs">
+            </div>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showHotelModal = false" class="flex-1 bg-gray-100 text-gray-600 py-1.5 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-amber-500 text-white py-1.5 rounded-xl font-bold hover:bg-amber-600">儲存飯店資訊</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 7. Edit Emergency Info Modal -->
+    <div v-if="showEmergencyModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-gray-800 text-sm">編輯緊急求助電話</h3>
+          <button @click="showEmergencyModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="saveEmergencyInfo" class="space-y-2 text-xs">
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold">緊急救護 / 報警電話</label>
+            <input type="text" v-model="emergencyForm.police" required class="w-full border rounded-lg px-2 py-1 text-xs">
+          </div>
+          <div>
+            <label class="block text-[10px] text-gray-500 font-bold">台北經濟文化辦事處電話</label>
+            <input type="text" v-model="emergencyForm.office" required class="w-full border rounded-lg px-2 py-1 text-xs">
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="button" @click="showEmergencyModal = false" class="flex-1 bg-gray-100 text-gray-600 py-1.5 rounded-xl font-bold">取消</button>
+            <button type="submit" class="flex-1 bg-rose-500 text-white py-1.5 rounded-xl font-bold hover:bg-rose-600">儲存求助電話</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VUE 3 LOGIC -->
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // ==============================
+        // 雲端多人同步設定
+        // 將 Firebase Console 的 Web App 設定貼到這裡即可啟用雲端。
+        // ==============================
+        const FIREBASE_CONFIG = {
+          apiKey: 'AIzaSyBiaGkGYgR71axowtJH0sA8VB0mSh1Afa4',
+          authDomain: 'project-6638153407368448514.firebaseapp.com',
+          projectId: 'project-6638153407368448514',
+          storageBucket: 'project-6638153407368448514.firebasestorage.app',
+          messagingSenderId: '201138269730',
+          appId: '1:201138269730:web:ec675e50ba2e9ca121247b',
+          measurementId: 'G-94P64M9VTX'
+        };
+        const cloudReady = ref(false);
+        const cloudError = ref('');
+        const cloudBusy = ref(false);
+        const cloudStatusLabel = computed(() => cloudReady.value ? '已同步' : '雲端');
+        const showCloudModal = ref(false);
+        const roomId = ref((new URLSearchParams(location.search).get('room') || localStorage.getItem('hk_room_id') || 'HK2026').toUpperCase());
+        const roomIdInput = ref(roomId.value);
+        let db = null, storage = null, unsubscribeRoom = null, cloudInitialized = false, applyingCloud = false, syncTimer = null;
+        const currentTab = ref('itinerary');
+        const prepSubTab = ref('todo');
+        const infoCategory = ref('voucher'); // 預設開啟「憑證」項目
+        const exchangeRate = ref(4.1);
+        const selectedDayIndex = ref(0);
+        const selectedCategoryFilter = ref('ALL');
+        const showHkdInExpenses = ref(true);
+
+        const calcHkd = ref(100);
+        const calcTwd = ref(410);
+
+        const updateFromHkd = () => {
+          calcTwd.value = Math.round((calcHkd.value || 0) * exchangeRate.value);
+        };
+        const updateFromTwd = () => {
+          calcHkd.value = Number(((calcTwd.value || 0) / exchangeRate.value).toFixed(1));
+        };
+
+        const teamMembers = ref([
+          { name: '球', color: '#E78895' },
+          { name: '緹', color: '#6CB4EE' },
+          { name: '米', color: '#E29D62' },
+          { name: '汧', color: '#799F8A' }
+        ]);
+
+        const getMemberColor = (memberName) => {
+          const found = teamMembers.value.find(m => m.name === memberName);
+          return found ? found.color : '#799F8A';
+        };
+
+        const departureDate = new Date('2026-10-16');
+        const daysUntilDeparture = computed(() => {
+          const today = new Date();
+          const diffTime = departureDate - today;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays > 0 ? diffDays : 0;
+        });
+
+        const itineraryDays = ref([
+          {
+            dayLabel: 'DAY 1',
+            dateStr: '10/16 五',
+            items: [
+              {
+                id: 'itin-1-1',
+                title: '出發 ✈️ 國泰/華航 前往香港赤鱲角',
+                category: '航班',
+                time: '09:15 - 11:15',
+                notes: '預先辦理香港電子簽證 / 護照效期確認',
+                flightData: {
+                  fromCode: 'KHH/TPE',
+                  fromCity: '台灣出發',
+                  toCode: 'HKG',
+                  toCity: '香港赤鱲角 T1',
+                  arrivalTime: '11:15',
+                  baggage: '23kg'
+                }
+              },
+              {
+                id: 'itin-1-2',
+                title: '尖沙咀帝苑酒店 Check-in / 寄放行李',
+                category: '住宿',
+                time: '12:30',
+                hours: '24小時櫃檯',
+                notes: '登記入住，地點交通便利',
+                transport: { type: 'mtr', time: '機場快線 22分鐘', note: '九龍站轉計程車或接駁' }
+              },
+              {
+                id: 'itin-1-3',
+                title: '蘭芳園 中環總店 (午餐)',
+                category: '美食',
+                time: '13:45',
+                hours: '07:30 - 18:00',
+                notes: '首創絲襪奶茶、蔥油雞扒撈丁必點！',
+                transport: { type: 'mtr', time: '港鐵 12分鐘', note: '尖沙咀站 -> 中環站' }
+              },
+              {
+                id: 'itin-1-4',
+                title: '太平山頂纜車觀景 + 凌霄閣夜景',
+                category: '景點',
+                time: '17:00',
+                hours: '07:30 - 23:00',
+                notes: '搭乘山頂纜車，欣賞維港夜景',
+                transport: { type: 'walk', time: '步行 15分鐘', note: '前往中環纜車總站' }
+              }
+            ]
+          },
+          {
+            dayLabel: 'DAY 2',
+            dateStr: '10/17 六',
+            items: [
+              {
+                id: 'itin-2-1',
+                title: '華星冰室 Capital Café (地道早餐)',
+                category: '美食',
+                time: '08:30',
+                hours: '07:00 - 19:00',
+                notes: '必點黑松露炒蛋多士、凍奶茶！',
+                transport: { type: 'walk', time: '步行 8分鐘', note: '尖沙咀分店' }
+              },
+              {
+                id: 'itin-2-2',
+                title: '香港迪士尼樂園 Hong Kong Disneyland',
+                category: '景點',
+                time: '10:00 - 20:30',
+                hours: '10:00 - 21:00',
+                notes: '全天暢玩！魔雪奇緣世界 (World of Frozen) + 奇妙夢想城堡煙火秀',
+                transport: { type: 'mtr', time: '港鐵 35分鐘', note: '迪士尼綫專車' }
+              },
+              {
+                id: 'itin-2-3',
+                title: '廟街夜市 Temple Street (宵夜大排檔)',
+                category: '美食',
+                time: '21:30',
+                hours: '18:00 - 00:00',
+                notes: '體驗地道大排檔炒蟹、煲仔飯與在地夜市氛圍',
+                transport: { type: 'mtr', time: '港鐵 20分鐘', note: '返市區佐敦/油麻地' }
+              }
+            ]
+          },
+          {
+            dayLabel: 'DAY 3',
+            dateStr: '10/18 日',
+            items: [
+              {
+                id: 'itin-3-1',
+                title: '蓮香樓 Lin Heung Tea House (傳統早茶)',
+                category: '美食',
+                time: '09:00',
+                hours: '06:00 - 16:00',
+                notes: '體驗推車仔傳統港式飲茶、蝦餃燒賣鳳爪',
+                transport: { type: 'mtr', time: '港鐵 15分鐘', note: '中環站' }
+              },
+              {
+                id: 'itin-3-2',
+                title: '中環散步 / Bakehouse 蛋撻 & 珍妮曲奇採買',
+                category: '購物',
+                time: '11:30',
+                hours: '10:00 - 21:00',
+                notes: '採買珍妮曲奇餅乾、Bakehouse 酸種蛋撻當伴手禮',
+                transport: { type: 'walk', time: '叮叮車 / 步行', note: '商圈散步' }
+              },
+              {
+                id: 'itin-3-3',
+                title: '預辦登機 ✈️ CX432 / CI910 賦歸台灣',
+                category: '航班',
+                time: '17:30',
+                notes: '搭乘機場快線前往機場，19:40 起飛返台',
+                transport: { type: 'mtr', time: '機場快線 22分鐘', note: '九龍站 -> 機場站' }
+              }
+            ]
+          }
+        ]);
+
+        // 憑證資料
+        const voucherSearch = ref('');
+        const voucherList = ref([
+          { id: 'v-1', title: '機票_凱文', platform: '德威官網', fileName: '機票憑證_凱文.pdf', file: '' }
+        ]);
+
+        const filteredVouchers = computed(() => {
+          if (!voucherSearch.value) return voucherList.value;
+          return voucherList.value.filter(v => 
+            v.title.toLowerCase().includes(voucherSearch.value.toLowerCase()) || 
+            (v.platform && v.platform.toLowerCase().includes(voucherSearch.value.toLowerCase()))
+          );
+        });
+
+        const expenseList = ref([
+          { id: 'exp-1', title: '機場快線雙人套票', amount: 180, category: '交通', paymentMethod: '信用卡', payer: '球', date: '10/16' },
+          { id: 'exp-2', title: '蘭芳園午餐奶茶', amount: 140, category: '餐飲', paymentMethod: '現金', payer: '緹', date: '10/16' },
+          { id: 'exp-3', title: '迪士尼門票', amount: 639, category: '門票', paymentMethod: '信用卡', payer: '米', date: '10/17' },
+          { id: 'exp-4', title: '廟街煲仔飯宵夜', amount: 220, category: '餐飲', paymentMethod: '現金', payer: '汧', date: '10/17' }
+        ]);
+
+        const todoList = ref([
+          { id: 't1', text: '辦理香港電子簽證 (台灣居民預辦入境登記)', completed: true, assignee: '全體' },
+          { id: 't2', text: '確認護照效期 (6個月以上)', completed: true, assignee: '全體' },
+          { id: 't3', text: '開通八達通 (Apple Wallet / 實體卡)', completed: false, assignee: '球' },
+          { id: 't4', text: '兌換港幣現金 (每人建議 HK$ 1000)', completed: false, assignee: '全體' }
+        ]);
+
+        const packingList = ref([
+          { id: 'p1', text: '英規三腳轉接頭 (UK Adapter)', completed: true },
+          { id: 'p2', text: '行動電源 & 快充線', completed: true },
+          { id: 'p3', text: '輕便短袖 + 薄外套', completed: false },
+          { id: 'p4', text: '個人藥品 & 折疊傘', completed: false }
+        ]);
+
+        const shoppingWishlist = ref([
+          { id: 's1', text: 'Bakehouse 酸種蛋撻 (盒裝)', price: 100, completed: false },
+          { id: 's2', text: '珍妮曲奇聰明小熊餅乾 4花', price: 150, completed: true },
+          { id: 's3', text: '黃道益活絡油', price: 65, completed: false },
+          { id: 's4', text: '港式奶茶包 / 檸檬王', price: 80, completed: false }
+        ]);
+
+        const journalEntries = ref([
+          {
+            id: 'j1',
+            date: '10/16 (五)',
+            author: '球',
+            content: '香港特攻隊順利抵達香港！太平山頂夜景依然超級震撼，蘭芳園奶茶極度濃郁！',
+            image: ''
+          }
+        ]);
+
+        const flightInfo = ref({
+          outbound: {
+            airline: '國泰航空 CX431 / 中華航空 CI909',
+            date: '10/16 (五)',
+            route: 'KHH/TPE 09:15 ➔ HKG T1 11:15',
+            baggage: '23kg',
+            code: 'HKG2026X'
+          },
+          inbound: {
+            airline: '國泰航空 CX432 / 中華航空 CI910',
+            date: '10/18 (日)',
+            route: 'HKG T1 19:40 ➔ KHH/TPE 21:30',
+            baggage: '23kg',
+            code: 'HKG2026Y'
+          }
+        });
+
+        const hotelInfo = ref({
+          name: '尖沙咀帝苑酒店 (The Royal Garden)',
+          address: '香港九龍尖沙咀東部麽地道69號',
+          transport: '港鐵尖東站 P1 出口步行 3 分鐘',
+          phone: '+852 2721 5215',
+          checkIn: '15:00',
+          checkOut: '12:00'
+        });
+
+        const emergencyContacts = ref({
+          police: '999',
+          office: '+852 2524 1201'
+        });
+
+        const currentDayData = computed(() => itineraryDays.value[selectedDayIndex.value]);
+
+        const filteredItinerary = computed(() => {
+          const items = currentDayData.value.items;
+          if (selectedCategoryFilter.value === 'ALL') return items;
+          return items.filter(i => i.category === selectedCategoryFilter.value);
+        });
+
+        const totalExpensesHkd = computed(() => expenseList.value.reduce((sum, item) => sum + (item.amount || 0), 0));
+
+        const paymentSummary = computed(() => {
+          const summary = { cash: 0, card: 0, octopus: 0 };
+          expenseList.value.forEach(e => {
+            if (e.paymentMethod === '現金') summary.cash += e.amount;
+            else if (e.paymentMethod === '信用卡') summary.card += e.amount;
+            else if (e.paymentMethod === '八達通') summary.octopus += e.amount;
+          });
+          return summary;
+        });
+
+        const getCategoryEmoji = (cat) => {
+          const map = { '景點': '🎡', '美食': '蛋撻', '住宿': '🏨', '購物': '🛍️', '航班': '✈️' };
+          return map[cat] || '📌';
+        };
+
+        const getCategoryColor = (cat) => {
+          const map = {
+            '景點': 'bg-sky-100 text-sky-700',
+            '美食': 'bg-amber-100 text-amber-700',
+            '住宿': 'bg-purple-100 text-purple-700',
+            '購物': 'bg-pink-100 text-pink-700',
+            '航班': 'bg-blue-100 text-blue-700'
+          };
+          return map[cat] || 'bg-gray-100 text-gray-700';
+        };
+
+        const getExpenseCategoryEmoji = (cat) => {
+          const map = { '餐飲': '蛋撻', '交通': '🚇', '住宿': '🏨', '門票': '🎟️', '購物': '🛍️', '雜項': '📌' };
+          return map[cat] || '💳';
+        };
+
+        const getExpenseCategoryBg = (cat) => {
+          const map = {
+            '餐飲': 'bg-amber-100 text-amber-700',
+            '交通': 'bg-blue-100 text-blue-700',
+            '住宿': 'bg-purple-100 text-purple-700',
+            '門票': 'bg-emerald-100 text-emerald-700',
+            '購物': 'bg-rose-100 text-rose-700'
+          };
+          return map[cat] || 'bg-gray-100';
+        };
+
+        const getGoogleMapsUrl = (query) => {
+          return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query + ' 香港 Hong Kong')}`;
+        };
+
+        const showItineraryModal = ref(false);
+        const editingItineraryId = ref(null);
+        const itineraryForm = ref({ title: '', category: '景點', time: '', hours: '', notes: '' });
+
+        const showExpenseModal = ref(false);
+        const expenseForm = ref({ title: '', amount: null, category: '餐飲', paymentMethod: '現金', payer: '球', date: '10/16' });
+
+        const showVoucherModal = ref(false);
+        const voucherForm = ref({ title: '', platform: '', fileName: '', file: '' });
+
+        const showJournalModal = ref(false);
+        const journalForm = ref({ author: '球', date: '10/16 (五)', content: '', image: '' });
+
+        const showFlightModal = ref(false);
+        const flightForm = ref({
+          outbound: { airline: '', date: '', route: '', baggage: '', code: '' },
+          inbound: { airline: '', date: '', route: '', baggage: '', code: '' }
+        });
+
+        const showHotelModal = ref(false);
+        const hotelForm = ref({ name: '', address: '', transport: '', phone: '', checkIn: '', checkOut: '' });
+
+        const showEmergencyModal = ref(false);
+        const emergencyForm = ref({ police: '', office: '' });
+
+        const openVoucherModal = () => {
+          voucherForm.value = { title: '', platform: '', fileName: '', file: '' };
+          showVoucherModal.value = true;
+        };
+
+        let voucherUploadFile = null;
+        const handleVoucherFile = (event) => { const file=event.target.files[0]; if(file){ voucherUploadFile=file; voucherForm.value.fileName=file.name; const reader=new FileReader(); reader.onload=e=>voucherForm.value.file=e.target.result; reader.readAsDataURL(file); } };
+        const saveVoucher = async () => { let fileUrl=voucherForm.value.file; if(cloudReady.value&&voucherUploadFile){try{fileUrl=await uploadFileToCloud(voucherUploadFile,'vouchers');}catch(e){console.error(e);}} voucherList.value.unshift({id:'v-'+Date.now(),...voucherForm.value,file:fileUrl||''}); voucherUploadFile=null; showVoucherModal.value=false; saveData(); };
+
+        const deleteVoucher = (id) => {
+          voucherList.value = voucherList.value.filter(v => v.id !== id);
+          saveData();
+        };
+
+        const openEditFlightModal = () => {
+          flightForm.value = JSON.parse(JSON.stringify(flightInfo.value));
+          showFlightModal.value = true;
+        };
+
+        const saveFlightInfo = () => {
+          flightInfo.value = JSON.parse(JSON.stringify(flightForm.value));
+          showFlightModal.value = false;
+          saveData();
+        };
+
+        const openEditHotelModal = () => {
+          hotelForm.value = JSON.parse(JSON.stringify(hotelInfo.value));
+          showHotelModal.value = true;
+        };
+
+        const saveHotelInfo = () => {
+          hotelInfo.value = JSON.parse(JSON.stringify(hotelForm.value));
+          showHotelModal.value = false;
+          saveData();
+        };
+
+        const openEditEmergencyModal = () => {
+          emergencyForm.value = JSON.parse(JSON.stringify(emergencyContacts.value));
+          showEmergencyModal.value = true;
+        };
+
+        const saveEmergencyInfo = () => {
+          emergencyContacts.value = JSON.parse(JSON.stringify(emergencyForm.value));
+          showEmergencyModal.value = false;
+          saveData();
+        };
+
+        const openItineraryModal = (item = null) => {
+          if (item) {
+            editingItineraryId.value = item.id;
+            itineraryForm.value = { ...item };
+          } else {
+            editingItineraryId.value = null;
+            itineraryForm.value = { title: '', category: '景點', time: '12:00', hours: '', notes: '' };
+          }
+          showItineraryModal.value = true;
+        };
+
+        const saveItinerary = () => {
+          if (editingItineraryId.value) {
+            const idx = currentDayData.value.items.findIndex(i => i.id === editingItineraryId.value);
+            if (idx !== -1) currentDayData.value.items[idx] = { ...currentDayData.value.items[idx], ...itineraryForm.value };
+          } else {
+            currentDayData.value.items.push({
+              id: 'itin-' + Date.now(),
+              ...itineraryForm.value,
+              transport: { type: 'walk', time: '10分鐘', note: '步行至此' }
+            });
+          }
+          showItineraryModal.value = false;
+          saveData();
+        };
+
+        const editItinerary = (item) => openItineraryModal(item);
+
+        const deleteItinerary = (id) => {
+          currentDayData.value.items = currentDayData.value.items.filter(i => i.id !== id);
+          saveData();
+        };
+
+        const moveItinerary = (index, direction) => {
+          const targetIndex = index + direction;
+          if (targetIndex >= 0 && targetIndex < currentDayData.value.items.length) {
+            const temp = currentDayData.value.items[index];
+            currentDayData.value.items[index] = currentDayData.value.items[targetIndex];
+            currentDayData.value.items[targetIndex] = temp;
+            saveData();
+          }
+        };
+
+        const openExpenseModal = () => {
+          expenseForm.value = { title: '', amount: null, category: '餐飲', paymentMethod: '現金', payer: '球', date: '10/16' };
+          showExpenseModal.value = true;
+        };
+
+        const saveExpense = () => {
+          expenseList.value.unshift({
+            id: 'exp-' + Date.now(),
+            ...expenseForm.value
+          });
+          showExpenseModal.value = false;
+          saveData();
+        };
+
+        const deleteExpense = (id) => {
+          expenseList.value = expenseList.value.filter(e => e.id !== id);
+          saveData();
+        };
+
+        const addPrepItem = (type) => {
+          const text = prompt('請輸入項目名稱：');
+          if (!text) return;
+
+          if (type === 'todo') todoList.value.push({ id: 't-' + Date.now(), text, completed: false, assignee: '' });
+          else if (type === 'packing') packingList.value.push({ id: 'p-' + Date.now(), text, completed: false });
+          else if (type === 'shopping') shoppingWishlist.value.push({ id: 's-' + Date.now(), text, price: 60, completed: false });
+
+          saveData();
+        };
+
+        const deletePrepItem = (type, id) => {
+          if (type === 'todo') todoList.value = todoList.value.filter(i => i.id !== id);
+          else if (type === 'packing') packingList.value = packingList.value.filter(i => i.id !== id);
+          else if (type === 'shopping') shoppingWishlist.value = shoppingWishlist.value.filter(i => i.id !== id);
+
+          saveData();
+        };
+
+        const openJournalModal = () => {
+          journalForm.value = { author: '球', date: '10/16 (五)', content: '', image: '' };
+          showJournalModal.value = true;
+        };
+
+        let journalUploadFile = null;
+        const handleJournalImage = (event) => { const file=event.target.files[0]; if(file){journalUploadFile=file; const reader=new FileReader(); reader.onload=e=>journalForm.value.image=e.target.result; reader.readAsDataURL(file);} };
+        const saveJournal = async () => { let imageUrl=journalForm.value.image; if(cloudReady.value&&journalUploadFile){try{imageUrl=await uploadFileToCloud(journalUploadFile,'journal');}catch(e){console.error(e);}} journalEntries.value.unshift({id:'j-'+Date.now(),...journalForm.value,image:imageUrl||''}); journalUploadFile=null; showJournalModal.value=false; saveData(); };
+
+        const deleteJournal = (id) => {
+          journalEntries.value = journalEntries.value.filter(j => j.id !== id);
+          saveData();
+        };
+
+        const openModalForCurrentTab = () => {
+          if (currentTab.value === 'itinerary') openItineraryModal();
+          else if (currentTab.value === 'expenses') openExpenseModal();
+          else if (currentTab.value === 'journal') openJournalModal();
+          else if (currentTab.value === 'info') openVoucherModal();
+          else openItineraryModal();
+        };
+
+        const saveLocalData = () => {
+          localStorage.setItem('hk3d2n_v2_itinerary', JSON.stringify(itineraryDays.value));
+          localStorage.setItem('hk3d2n_v2_expenses', JSON.stringify(expenseList.value));
+          localStorage.setItem('hk3d2n_v2_todo', JSON.stringify(todoList.value));
+          localStorage.setItem('hk3d2n_v2_packing', JSON.stringify(packingList.value));
+          localStorage.setItem('hk3d2n_v2_shopping', JSON.stringify(shoppingWishlist.value));
+          localStorage.setItem('hk3d2n_v2_journal', JSON.stringify(journalEntries.value));
+          localStorage.setItem('hk3d2n_v2_flight', JSON.stringify(flightInfo.value));
+          localStorage.setItem('hk3d2n_v2_hotel', JSON.stringify(hotelInfo.value));
+          localStorage.setItem('hk3d2n_v2_emergency', JSON.stringify(emergencyContacts.value));
+          localStorage.setItem('hk3d2n_v2_vouchers', JSON.stringify(voucherList.value));
+        };
+
+        const getCloudState = () => ({ itineraryDays: itineraryDays.value, expenseList: expenseList.value, todoList: todoList.value, packingList: packingList.value, shoppingWishlist: shoppingWishlist.value, journalEntries: journalEntries.value.map(j => ({...j, image: j.image && j.image.startsWith('data:') ? '' : j.image})), flightInfo: flightInfo.value, hotelInfo: hotelInfo.value, emergencyContacts: emergencyContacts.value, voucherList: voucherList.value.map(v => ({...v, file: v.file && v.file.startsWith('data:') ? '' : v.file})), teamMembers: teamMembers.value, exchangeRate: exchangeRate.value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+
+        const applyCloudState = data => { if (!data) return; applyingCloud = true; try { if(data.itineraryDays) itineraryDays.value=data.itineraryDays; if(data.expenseList) expenseList.value=data.expenseList; if(data.todoList) todoList.value=data.todoList; if(data.packingList) packingList.value=data.packingList; if(data.shoppingWishlist) shoppingWishlist.value=data.shoppingWishlist; if(data.journalEntries) journalEntries.value=data.journalEntries; if(data.flightInfo) flightInfo.value=data.flightInfo; if(data.hotelInfo) hotelInfo.value=data.hotelInfo; if(data.emergencyContacts) emergencyContacts.value=data.emergencyContacts; if(data.voucherList) voucherList.value=data.voucherList; if(data.teamMembers) teamMembers.value=data.teamMembers; if(typeof data.exchangeRate==='number') exchangeRate.value=data.exchangeRate; saveLocalData(); } finally { applyingCloud=false; } };
+
+        const syncToCloud = async () => { if(!cloudReady.value || !db || applyingCloud) return; try { await db.collection('travelRooms').doc(roomId.value).set(getCloudState(), {merge:true}); } catch(e) { console.error('Cloud sync failed:',e); } };
+        const saveData = () => { saveLocalData(); if(cloudReady.value && !applyingCloud){ clearTimeout(syncTimer); syncTimer=setTimeout(syncToCloud,350); } };
+
+        const loadData = () => { const g=k=>localStorage.getItem(k); const a=g('hk3d2n_v2_itinerary'),b=g('hk3d2n_v2_expenses'),c=g('hk3d2n_v2_todo'),d=g('hk3d2n_v2_packing'),e=g('hk3d2n_v2_shopping'),f=g('hk3d2n_v2_journal'),h=g('hk3d2n_v2_flight'),i=g('hk3d2n_v2_hotel'),j=g('hk3d2n_v2_emergency'),k=g('hk3d2n_v2_vouchers'); if(a)itineraryDays.value=JSON.parse(a); if(b)expenseList.value=JSON.parse(b); if(c)todoList.value=JSON.parse(c); if(d)packingList.value=JSON.parse(d); if(e)shoppingWishlist.value=JSON.parse(e); if(f)journalEntries.value=JSON.parse(f); if(h)flightInfo.value=JSON.parse(h); if(i)hotelInfo.value=JSON.parse(i); if(j)emergencyContacts.value=JSON.parse(j); if(k)voucherList.value=JSON.parse(k); };
+
+        const openCloudModal = () => { roomIdInput.value=roomId.value; showCloudModal.value=true; };
+        const copyRoomLink = async () => { const url=`${location.origin}${location.pathname}?room=${encodeURIComponent(roomId.value)}`; try{await navigator.clipboard.writeText(url); alert('邀請連結已複製！傳給旅伴即可加入。');}catch{prompt('請複製這個邀請連結：',url);} };
+        const formatFirebaseError = (e) => {
+          const code = e && e.code ? String(e.code) : '';
+          const msg = e && e.message ? String(e.message) : String(e || '未知錯誤');
+          if (code === 'auth/unauthorized-domain') return 'Firebase 不允許目前的網站網址。請到 Firebase → Authentication → Settings → Authorized domains 加入 a91882-dotcom.github.io。';
+          if (code === 'auth/operation-not-allowed') return 'Firebase 的匿名登入尚未啟用。請到 Authentication → Sign-in method → Anonymous 開啟。';
+          if (code === 'permission-denied') return 'Firestore 權限不足，請確認 Firestore Rules 已允許已登入使用者讀寫 travelRooms。';
+          if (msg.includes('Missing or insufficient permissions')) return 'Firestore 權限不足，請確認 Firestore Rules。';
+          return code ? `${code}：${msg}` : msg;
+        };
+
+        const connectCloudRoom = async (silent=false) => {
+          const nextRoom=(roomIdInput.value||'').trim().replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32).toUpperCase();
+          if(!nextRoom){ if(!silent) alert('請輸入房間代碼'); return; }
+          roomId.value=nextRoom;
+          roomIdInput.value=nextRoom;
+          localStorage.setItem('hk_room_id',nextRoom);
+          cloudError.value='';
+          cloudBusy.value=true;
+          try {
+            if(!cloudInitialized || !db) {
+              await initFirebase(false);
+            }
+            if(!cloudInitialized || !db) {
+              throw new Error('Firebase 尚未完成初始化');
+            }
+            if(unsubscribeRoom) unsubscribeRoom();
+            unsubscribeRoom=db.collection('travelRooms').doc(nextRoom).onSnapshot(
+              async snap => {
+                if(snap.exists) applyCloudState(snap.data());
+                else await syncToCloud();
+              },
+              e => {
+                console.error('Cloud listener failed:',e);
+                cloudError.value=formatFirebaseError(e);
+                cloudReady.value=false;
+              }
+            );
+            const url=new URL(location.href);
+            url.searchParams.set('room',nextRoom);
+            history.replaceState({},'',url);
+            if(!silent) showCloudModal.value=false;
+          } catch(e) {
+            console.error('Cloud connection failed:',e);
+            cloudReady.value=false;
+            cloudError.value=formatFirebaseError(e);
+          } finally {
+            cloudBusy.value=false;
+          }
+        };
+
+        const initFirebase = async (autoConnect=true) => {
+          const configured=FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('YOUR_') && FIREBASE_CONFIG.projectId && !FIREBASE_CONFIG.projectId.startsWith('YOUR_');
+          cloudError.value='';
+          if(!configured) {
+            cloudError.value='Firebase Web App 設定尚未填入。';
+            return false;
+          }
+          if(typeof firebase==='undefined') {
+            cloudError.value='Firebase 程式庫載入失敗，請確認網路連線後重新整理。';
+            return false;
+          }
+          cloudBusy.value=true;
+          try {
+            if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+            await firebase.auth().signInAnonymously();
+            db=firebase.firestore();
+            storage=firebase.storage();
+            cloudInitialized=true;
+            cloudReady.value=true;
+            if(autoConnect) await connectCloudRoom(true);
+            return true;
+          } catch(e) {
+            console.error('Firebase initialization failed:',e);
+            cloudInitialized=false;
+            cloudReady.value=false;
+            cloudError.value=formatFirebaseError(e);
+            return false;
+          } finally {
+            cloudBusy.value=false;
+          }
+        };
+        const uploadFileToCloud = async (file,folder) => { if(!cloudReady.value||!storage||!file)return null; const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_'); const ref=storage.ref(`travelRooms/${roomId.value}/${folder}/${Date.now()}_${safe}`); const snap=await ref.put(file); return await snap.ref.getDownloadURL(); };
+
+        onMounted(() => { loadData(); initFirebase(); });
+
+        return {
+          currentTab,
+          prepSubTab,
+          infoCategory,
+          exchangeRate,
+          calcHkd,
+          calcTwd,
+          updateFromHkd,
+          updateFromTwd,
+          teamMembers,
+          getMemberColor,
+          daysUntilDeparture,
+          selectedDayIndex,
+          selectedCategoryFilter,
+          showHkdInExpenses,
+          itineraryDays,
+          currentDayData,
+          filteredItinerary,
+          getCategoryEmoji,
+          getCategoryColor,
+          getExpenseCategoryEmoji,
+          getExpenseCategoryBg,
+          getGoogleMapsUrl,
+          expenseList,
+          totalExpensesHkd,
+          paymentSummary,
+          todoList,
+          packingList,
+          shoppingWishlist,
+          journalEntries,
+          flightInfo,
+          hotelInfo,
+          emergencyContacts,
+          voucherSearch,
+          voucherList,
+          filteredVouchers,
+          showVoucherModal,
+          voucherForm,
+          openVoucherModal,
+          handleVoucherFile,
+          saveVoucher,
+          deleteVoucher,
+          showFlightModal,
+          flightForm,
+          openEditFlightModal,
+          saveFlightInfo,
+          showHotelModal,
+          hotelForm,
+          openEditHotelModal,
+          saveHotelInfo,
+          showEmergencyModal,
+          emergencyForm,
+          openEditEmergencyModal,
+          saveEmergencyInfo,
+          showItineraryModal,
+          editingItineraryId,
+          itineraryForm,
+          openItineraryModal,
+          saveItinerary,
+          editItinerary,
+          deleteItinerary,
+          moveItinerary,
+          showExpenseModal,
+          expenseForm,
+          openExpenseModal,
+          saveExpense,
+          deleteExpense,
+          addPrepItem,
+          deletePrepItem,
+          showJournalModal,
+          journalForm,
+          openJournalModal,
+          handleJournalImage,
+          saveJournal,
+          deleteJournal,
+          openModalForCurrentTab,
+          saveData,
+          cloudReady,
+          cloudError,
+          cloudBusy,
+          cloudStatusLabel,
+          showCloudModal,
+          roomId,
+          roomIdInput,
+          openCloudModal,
+          connectCloudRoom,
+          copyRoomLink
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
