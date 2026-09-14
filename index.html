@@ -8,11 +8,8 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase (雲端多人同步) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <!-- Supabase（雲端多人同步） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <!-- Vue 3 CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -1094,18 +1091,16 @@
     createApp({
       setup() {
         // ==============================
-        // 雲端多人同步設定
-        // 將 Firebase Console 的 Web App 設定貼到這裡即可啟用雲端。
+        // Supabase 雲端多人同步設定
         // ==============================
-        const FIREBASE_CONFIG = {
-          apiKey: 'AIzaSyBiaGkGYgR71axowtJH0sA8VB0mSh1Afa4',
-          authDomain: 'project-6638153407368448514.firebaseapp.com',
-          projectId: 'project-6638153407368448514',
-          storageBucket: 'project-6638153407368448514.firebasestorage.app',
-          messagingSenderId: '201138269730',
-          appId: '1:201138269730:web:ec675e50ba2e9ca121247b',
-          measurementId: 'G-94P64M9VTX'
-        };
+        const SUPABASE_URL = 'https://sfdcrizlarokrifrpehr.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3_ZHjKkaEKqeRIhtRWHWvg_2b07gciR';
+
+        const supabaseClient = window.supabase.createClient(
+          SUPABASE_URL,
+          SUPABASE_PUBLISHABLE_KEY
+        );
+
         const cloudReady = ref(false);
         const cloudError = ref('');
         const cloudBusy = ref(false);
@@ -1113,10 +1108,16 @@
         const showCloudModal = ref(false);
         const roomId = ref((new URLSearchParams(location.search).get('room') || localStorage.getItem('hk_room_id') || 'HK2026').toUpperCase());
         const roomIdInput = ref(roomId.value);
-        let db = null, storage = null, unsubscribeRoom = null, cloudInitialized = false, applyingCloud = false, syncTimer = null;
+
+        let unsubscribeRoom = null;
+        let cloudInitialized = false;
+        let applyingCloud = false;
+        let syncTimer = null;
+        let realtimeChannel = null;
+
         const currentTab = ref('itinerary');
         const prepSubTab = ref('todo');
-        const infoCategory = ref('voucher'); // 預設開啟「憑證」項目
+        const infoCategory = ref('voucher');
         const exchangeRate = ref(4.1);
         const selectedDayIndex = ref(0);
         const selectedCategoryFilter = ref('ALL');
@@ -1595,101 +1596,265 @@
           localStorage.setItem('hk3d2n_v2_vouchers', JSON.stringify(voucherList.value));
         };
 
-        const getCloudState = () => ({ itineraryDays: itineraryDays.value, expenseList: expenseList.value, todoList: todoList.value, packingList: packingList.value, shoppingWishlist: shoppingWishlist.value, journalEntries: journalEntries.value.map(j => ({...j, image: j.image && j.image.startsWith('data:') ? '' : j.image})), flightInfo: flightInfo.value, hotelInfo: hotelInfo.value, emergencyContacts: emergencyContacts.value, voucherList: voucherList.value.map(v => ({...v, file: v.file && v.file.startsWith('data:') ? '' : v.file})), teamMembers: teamMembers.value, exchangeRate: exchangeRate.value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const getCloudState = () => ({
+          itineraryDays: itineraryDays.value,
+          expenseList: expenseList.value,
+          todoList: todoList.value,
+          packingList: packingList.value,
+          shoppingWishlist: shoppingWishlist.value,
+          journalEntries: journalEntries.value.map(j => ({
+            ...j,
+            image: j.image && j.image.startsWith('data:') ? '' : j.image
+          })),
+          flightInfo: flightInfo.value,
+          hotelInfo: hotelInfo.value,
+          emergencyContacts: emergencyContacts.value,
+          voucherList: voucherList.value.map(v => ({
+            ...v,
+            file: v.file && v.file.startsWith('data:') ? '' : v.file
+          })),
+          teamMembers: teamMembers.value,
+          exchangeRate: exchangeRate.value
+        });
 
-        const applyCloudState = data => { if (!data) return; applyingCloud = true; try { if(data.itineraryDays) itineraryDays.value=data.itineraryDays; if(data.expenseList) expenseList.value=data.expenseList; if(data.todoList) todoList.value=data.todoList; if(data.packingList) packingList.value=data.packingList; if(data.shoppingWishlist) shoppingWishlist.value=data.shoppingWishlist; if(data.journalEntries) journalEntries.value=data.journalEntries; if(data.flightInfo) flightInfo.value=data.flightInfo; if(data.hotelInfo) hotelInfo.value=data.hotelInfo; if(data.emergencyContacts) emergencyContacts.value=data.emergencyContacts; if(data.voucherList) voucherList.value=data.voucherList; if(data.teamMembers) teamMembers.value=data.teamMembers; if(typeof data.exchangeRate==='number') exchangeRate.value=data.exchangeRate; saveLocalData(); } finally { applyingCloud=false; } };
+        const applyCloudState = data => {
+          if (!data) return;
+          applyingCloud = true;
+          try {
+            if(data.itineraryDays) itineraryDays.value = data.itineraryDays;
+            if(data.expenseList) expenseList.value = data.expenseList;
+            if(data.todoList) todoList.value = data.todoList;
+            if(data.packingList) packingList.value = data.packingList;
+            if(data.shoppingWishlist) shoppingWishlist.value = data.shoppingWishlist;
+            if(data.journalEntries) journalEntries.value = data.journalEntries;
+            if(data.flightInfo) flightInfo.value = data.flightInfo;
+            if(data.hotelInfo) hotelInfo.value = data.hotelInfo;
+            if(data.emergencyContacts) emergencyContacts.value = data.emergencyContacts;
+            if(data.voucherList) voucherList.value = data.voucherList;
+            if(data.teamMembers) teamMembers.value = data.teamMembers;
+            if(typeof data.exchangeRate === 'number') exchangeRate.value = data.exchangeRate;
+            saveLocalData();
+          } finally {
+            applyingCloud = false;
+          }
+        };
 
-        const syncToCloud = async () => { if(!cloudReady.value || !db || applyingCloud) return; try { await db.collection('travelRooms').doc(roomId.value).set(getCloudState(), {merge:true}); } catch(e) { console.error('Cloud sync failed:',e); } };
-        const saveData = () => { saveLocalData(); if(cloudReady.value && !applyingCloud){ clearTimeout(syncTimer); syncTimer=setTimeout(syncToCloud,350); } };
+        const syncToCloud = async () => {
+          if(!cloudReady.value || applyingCloud) return;
+          try {
+            const { error } = await supabaseClient
+              .from('travel_rooms')
+              .upsert({
+                room_id: roomId.value,
+                state: getCloudState(),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'room_id' });
 
-        const loadData = () => { const g=k=>localStorage.getItem(k); const a=g('hk3d2n_v2_itinerary'),b=g('hk3d2n_v2_expenses'),c=g('hk3d2n_v2_todo'),d=g('hk3d2n_v2_packing'),e=g('hk3d2n_v2_shopping'),f=g('hk3d2n_v2_journal'),h=g('hk3d2n_v2_flight'),i=g('hk3d2n_v2_hotel'),j=g('hk3d2n_v2_emergency'),k=g('hk3d2n_v2_vouchers'); if(a)itineraryDays.value=JSON.parse(a); if(b)expenseList.value=JSON.parse(b); if(c)todoList.value=JSON.parse(c); if(d)packingList.value=JSON.parse(d); if(e)shoppingWishlist.value=JSON.parse(e); if(f)journalEntries.value=JSON.parse(f); if(h)flightInfo.value=JSON.parse(h); if(i)hotelInfo.value=JSON.parse(i); if(j)emergencyContacts.value=JSON.parse(j); if(k)voucherList.value=JSON.parse(k); };
+            if (error) throw error;
+          } catch(e) {
+            console.error('Supabase cloud sync failed:', e);
+            cloudError.value = formatSupabaseError(e);
+          }
+        };
 
-        const openCloudModal = () => { roomIdInput.value=roomId.value; showCloudModal.value=true; };
-        const copyRoomLink = async () => { const url=`${location.origin}${location.pathname}?room=${encodeURIComponent(roomId.value)}`; try{await navigator.clipboard.writeText(url); alert('邀請連結已複製！傳給旅伴即可加入。');}catch{prompt('請複製這個邀請連結：',url);} };
-        const formatFirebaseError = (e) => {
-          const code = e && e.code ? String(e.code) : '';
+        const saveData = () => {
+          saveLocalData();
+          if(cloudReady.value && !applyingCloud){
+            clearTimeout(syncTimer);
+            syncTimer = setTimeout(syncToCloud, 350);
+          }
+        };
+
+        const loadData = () => {
+          const g = k => localStorage.getItem(k);
+          const a=g('hk3d2n_v2_itinerary'),
+                b=g('hk3d2n_v2_expenses'),
+                c=g('hk3d2n_v2_todo'),
+                d=g('hk3d2n_v2_packing'),
+                e=g('hk3d2n_v2_shopping'),
+                f=g('hk3d2n_v2_journal'),
+                h=g('hk3d2n_v2_flight'),
+                i=g('hk3d2n_v2_hotel'),
+                j=g('hk3d2n_v2_emergency'),
+                k=g('hk3d2n_v2_vouchers');
+
+          if(a) itineraryDays.value=JSON.parse(a);
+          if(b) expenseList.value=JSON.parse(b);
+          if(c) todoList.value=JSON.parse(c);
+          if(d) packingList.value=JSON.parse(d);
+          if(e) shoppingWishlist.value=JSON.parse(e);
+          if(f) journalEntries.value=JSON.parse(f);
+          if(h) flightInfo.value=JSON.parse(h);
+          if(i) hotelInfo.value=JSON.parse(i);
+          if(j) emergencyContacts.value=JSON.parse(j);
+          if(k) voucherList.value=JSON.parse(k);
+        };
+
+        const openCloudModal = () => {
+          roomIdInput.value = roomId.value;
+          showCloudModal.value = true;
+        };
+
+        const copyRoomLink = async () => {
+          const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(roomId.value)}`;
+          try {
+            await navigator.clipboard.writeText(url);
+            alert('邀請連結已複製！傳給旅伴即可加入。');
+          } catch {
+            prompt('請複製這個邀請連結：', url);
+          }
+        };
+
+        const formatSupabaseError = (e) => {
           const msg = e && e.message ? String(e.message) : String(e || '未知錯誤');
-          if (code === 'auth/unauthorized-domain') return 'Firebase 不允許目前的網站網址。請到 Firebase → Authentication → Settings → Authorized domains 加入 a91882-dotcom.github.io。';
-          if (code === 'auth/operation-not-allowed') return 'Firebase 的匿名登入尚未啟用。請到 Authentication → Sign-in method → Anonymous 開啟。';
-          if (code === 'permission-denied') return 'Firestore 權限不足，請確認 Firestore Rules 已允許已登入使用者讀寫 travelRooms。';
-          if (msg.includes('Missing or insufficient permissions')) return 'Firestore 權限不足，請確認 Firestore Rules。';
-          return code ? `${code}：${msg}` : msg;
+          if (msg.includes('permission denied') || msg.includes('row-level security')) {
+            return 'Supabase 權限不足，請確認 travel_rooms 的 RLS 政策。';
+          }
+          if (msg.includes('travel_rooms')) {
+            return `Supabase 資料表錯誤：${msg}`;
+          }
+          return msg;
         };
 
         const connectCloudRoom = async (silent=false) => {
-          const nextRoom=(roomIdInput.value||'').trim().replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32).toUpperCase();
-          if(!nextRoom){ if(!silent) alert('請輸入房間代碼'); return; }
-          roomId.value=nextRoom;
-          roomIdInput.value=nextRoom;
-          localStorage.setItem('hk_room_id',nextRoom);
-          cloudError.value='';
-          cloudBusy.value=true;
+          const nextRoom = (roomIdInput.value || '')
+            .trim()
+            .replace(/[^a-zA-Z0-9_-]/g,'')
+            .slice(0,32)
+            .toUpperCase();
+
+          if(!nextRoom){
+            if(!silent) alert('請輸入房間代碼');
+            return;
+          }
+
+          roomId.value = nextRoom;
+          roomIdInput.value = nextRoom;
+          localStorage.setItem('hk_room_id', nextRoom);
+          cloudError.value = '';
+          cloudBusy.value = true;
+
           try {
-            if(!cloudInitialized || !db) {
-              await initFirebase(false);
+            if (realtimeChannel) {
+              await supabaseClient.removeChannel(realtimeChannel);
+              realtimeChannel = null;
             }
-            if(!cloudInitialized || !db) {
-              throw new Error('Firebase 尚未完成初始化');
+
+            const { data, error } = await supabaseClient
+              .from('travel_rooms')
+              .select('room_id,state,updated_at')
+              .eq('room_id', nextRoom)
+              .maybeSingle();
+
+            if (error) throw error;
+
+            cloudInitialized = true;
+            cloudReady.value = true;
+
+            if (data && data.state) {
+              applyCloudState(data.state);
+            } else {
+              await supabaseClient
+                .from('travel_rooms')
+                .upsert({
+                  room_id: nextRoom,
+                  state: getCloudState(),
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'room_id' })
+                .throwOnError();
             }
-            if(unsubscribeRoom) unsubscribeRoom();
-            unsubscribeRoom=db.collection('travelRooms').doc(nextRoom).onSnapshot(
-              async snap => {
-                if(snap.exists) applyCloudState(snap.data());
-                else await syncToCloud();
-              },
-              e => {
-                console.error('Cloud listener failed:',e);
-                cloudError.value=formatFirebaseError(e);
-                cloudReady.value=false;
-              }
-            );
-            const url=new URL(location.href);
-            url.searchParams.set('room',nextRoom);
+
+            realtimeChannel = supabaseClient
+              .channel(`travel-room-${nextRoom}`)
+              .on(
+                'postgres_changes',
+                {
+                  event: '*',
+                  schema: 'public',
+                  table: 'travel_rooms',
+                  filter: `room_id=eq.${nextRoom}`
+                },
+                payload => {
+                  if (payload.new && payload.new.state) {
+                    applyCloudState(payload.new.state);
+                  }
+                }
+              )
+              .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  cloudReady.value = true;
+                  cloudError.value = '';
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                  cloudError.value = 'Supabase 即時同步連線失敗，請確認 Realtime 已啟用。';
+                }
+              });
+
+            const url = new URL(location.href);
+            url.searchParams.set('room', nextRoom);
             history.replaceState({},'',url);
-            if(!silent) showCloudModal.value=false;
+
+            if(!silent) showCloudModal.value = false;
           } catch(e) {
-            console.error('Cloud connection failed:',e);
-            cloudReady.value=false;
-            cloudError.value=formatFirebaseError(e);
+            console.error('Supabase connection failed:', e);
+            cloudReady.value = false;
+            cloudInitialized = false;
+            cloudError.value = formatSupabaseError(e);
           } finally {
-            cloudBusy.value=false;
+            cloudBusy.value = false;
           }
         };
 
-        const initFirebase = async (autoConnect=true) => {
-          const configured=FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('YOUR_') && FIREBASE_CONFIG.projectId && !FIREBASE_CONFIG.projectId.startsWith('YOUR_');
-          cloudError.value='';
-          if(!configured) {
-            cloudError.value='Firebase Web App 設定尚未填入。';
-            return false;
-          }
-          if(typeof firebase==='undefined') {
-            cloudError.value='Firebase 程式庫載入失敗，請確認網路連線後重新整理。';
-            return false;
-          }
-          cloudBusy.value=true;
+        const initSupabase = async (autoConnect=true) => {
+          cloudBusy.value = true;
+          cloudError.value = '';
+
           try {
-            if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-            await firebase.auth().signInAnonymously();
-            db=firebase.firestore();
-            storage=firebase.storage();
-            cloudInitialized=true;
-            cloudReady.value=true;
+            if (!window.supabase || !supabaseClient) {
+              throw new Error('Supabase 程式庫載入失敗，請確認網路連線後重新整理。');
+            }
+
+            cloudInitialized = true;
+            cloudReady.value = true;
+
             if(autoConnect) await connectCloudRoom(true);
             return true;
           } catch(e) {
-            console.error('Firebase initialization failed:',e);
-            cloudInitialized=false;
-            cloudReady.value=false;
-            cloudError.value=formatFirebaseError(e);
+            console.error('Supabase initialization failed:', e);
+            cloudInitialized = false;
+            cloudReady.value = false;
+            cloudError.value = formatSupabaseError(e);
             return false;
           } finally {
-            cloudBusy.value=false;
+            cloudBusy.value = false;
           }
         };
-        const uploadFileToCloud = async (file,folder) => { if(!cloudReady.value||!storage||!file)return null; const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_'); const ref=storage.ref(`travelRooms/${roomId.value}/${folder}/${Date.now()}_${safe}`); const snap=await ref.put(file); return await snap.ref.getDownloadURL(); };
 
-        onMounted(() => { loadData(); initFirebase(); });
+        const uploadFileToCloud = async (file, folder) => {
+          if(!cloudReady.value || !file) return null;
+          try {
+            const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+            const path = `travelRooms/${roomId.value}/${folder}/${Date.now()}_${safe}`;
+
+            const { error: uploadError } = await supabaseClient
+              .storage
+              .from('travel-files')
+              .upload(path, file, { upsert: false });
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabaseClient
+              .storage
+              .from('travel-files')
+              .getPublicUrl(path);
+
+            return data.publicUrl;
+          } catch(e) {
+            console.error('Supabase Storage upload failed:', e);
+            return null;
+          }
+        };
+
+        onMounted(() => { loadData(); initSupabase(); });
 
         return {
           currentTab,
