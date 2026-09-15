@@ -353,17 +353,22 @@
                 </button>
               </div>
 
-              <!-- Attachment Preview / Download -->
+              <!-- 附件：像「查看 / 下載」卡片一樣呈現 -->
               <div v-if="voucher.file" class="bg-gray-50 p-2 rounded-xl flex items-center justify-between border border-gray-100 text-xs">
-                <div class="flex items-center gap-2 overflow-hidden">
-                  <div class="w-7 h-7 bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                    PDF
+                <div class="flex items-center gap-2 overflow-hidden min-w-0">
+                  <div :class="isImageFile(voucher.file, voucher.fileType, voucher.fileName) ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'" class="w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                    {{ getFileLabel(voucher.file, voucher.fileType, voucher.fileName) }}
                   </div>
-                  <span class="text-gray-600 font-medium truncate text-[11px]">{{ voucher.fileName || '憑證文件' }}</span>
+                  <span class="text-gray-700 font-medium truncate text-[11px]">{{ voucher.fileName || '憑證文件' }}</span>
                 </div>
-                <a :href="voucher.file" :download="voucher.fileName || 'voucher.pdf'" target="_blank" class="bg-emerald-50 text-[#5B826D] hover:bg-emerald-100 px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1 flex-shrink-0">
-                  <i class="fa-solid fa-arrow-down-to-line"></i> 查看/下載
-                </a>
+                <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                  <button type="button" @click="openFilePreview(voucher.file, voucher.fileType || (isImageFile(voucher.file, voucher.fileType, voucher.fileName) ? 'image/*' : 'application/pdf'), voucher.fileName || '憑證文件')" class="bg-emerald-50 text-[#5B826D] hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg font-bold text-[10px] flex items-center gap-1">
+                    <i class="fa-solid fa-magnifying-glass"></i> 查看
+                  </button>
+                  <button type="button" @click="downloadFile(voucher.file, voucher.fileName || 'voucher.pdf')" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg font-bold text-[10px] flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> 下載
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -678,8 +683,22 @@
 
             <p class="text-xs text-gray-700 leading-relaxed font-medium whitespace-pre-line">{{ entry.content }}</p>
 
-            <div v-if="entry.image" class="rounded-xl overflow-hidden max-h-48 bg-gray-100 border border-gray-100 mt-2">
-              <img :src="entry.image" class="w-full h-full object-cover">
+            <div v-if="entry.image" class="mt-2 bg-gray-50 rounded-xl border border-gray-100 p-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="w-9 h-9 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">IMG</div>
+                  <span class="text-[11px] text-gray-700 font-medium truncate">{{ entry.imageName || '旅途照片' }}</span>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <button type="button" @click="openFilePreview(entry.image, entry.imageType || 'image/*', entry.imageName || '旅途照片')" class="bg-emerald-50 text-[#5B826D] hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg font-bold text-[10px] flex items-center gap-1">
+                    <i class="fa-solid fa-magnifying-glass"></i> 查看
+                  </button>
+                  <button type="button" @click="downloadFile(entry.image, entry.imageName || 'travel-photo.jpg')" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg font-bold text-[10px] flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> 下載
+                  </button>
+                </div>
+              </div>
+              <img :src="entry.image" :alt="entry.imageName || '旅途照片'" class="mt-2 w-full max-h-44 object-cover rounded-lg cursor-pointer" @click="openFilePreview(entry.image, entry.imageType || 'image/*', entry.imageName || '旅途照片')">
             </div>
 
             <div class="flex justify-end pt-1">
@@ -936,6 +955,24 @@
     </div>
 
     <!-- 5. Edit Flight Info Modal -->
+    <div v-if="showFilePreview" class="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 z-[100]" @click.self="closeFilePreview">
+      <div class="relative w-full max-w-5xl max-h-[96vh] flex flex-col items-center">
+        <button @click="closeFilePreview" class="absolute -top-1 right-0 bg-white text-gray-700 w-10 h-10 rounded-full shadow-lg z-10"><i class="fa-solid fa-xmark"></i></button>
+        <div class="w-full max-h-[78vh] rounded-2xl overflow-auto bg-black/30 flex items-center justify-center p-2">
+          <img v-if="previewType.startsWith('image/') || previewUrl.startsWith('data:image/') || /\.(jpe?g|png|gif|webp|bmp|heic)(\?|$)/i.test(previewUrl)" :src="previewUrl" :alt="previewName" class="max-w-full max-h-[76vh] object-contain transition-transform duration-200 cursor-zoom-in" :style="{ transform: 'scale(' + previewScale + ')' }" @dblclick="togglePreviewZoom">
+          <iframe v-else :src="previewUrl" class="w-full h-[75vh] bg-white rounded-xl" :title="previewName"></iframe>
+        </div>
+        <div class="mt-2 text-white text-xs font-bold truncate max-w-full px-8">{{ previewName }}</div>
+        <div class="flex items-center gap-2 mt-3">
+          <button v-if="previewType.startsWith('image/') || previewUrl.startsWith('data:image/') || /\.(jpe?g|png|gif|webp|bmp|heic)(\?|$)/i.test(previewUrl)" @click="zoomOutPreview" class="bg-white/90 text-gray-700 w-10 h-10 rounded-xl text-base font-bold shadow-lg">−</button>
+          <button v-if="previewType.startsWith('image/') || previewUrl.startsWith('data:image/') || /\.(jpe?g|png|gif|webp|bmp|heic)(\?|$)/i.test(previewUrl)" @click="resetPreviewZoom" class="bg-white/90 text-gray-700 px-3 h-10 rounded-xl text-[11px] font-bold shadow-lg">{{ Math.round(previewScale*100) }}%</button>
+          <button v-if="previewType.startsWith('image/') || previewUrl.startsWith('data:image/') || /\.(jpe?g|png|gif|webp|bmp|heic)(\?|$)/i.test(previewUrl)" @click="zoomInPreview" class="bg-white/90 text-gray-700 w-10 h-10 rounded-xl text-base font-bold shadow-lg">＋</button>
+          <button @click="downloadFile(previewUrl, previewName)" class="bg-white text-[#5B826D] px-4 h-10 rounded-xl text-xs font-bold shadow-lg"><i class="fa-solid fa-download mr-1"></i>下載</button>
+          <a :href="previewUrl" target="_blank" rel="noopener" class="bg-white/90 text-gray-700 px-4 h-10 rounded-xl text-xs font-bold shadow-lg"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>開啟</a>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showFlightModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-3xl w-full max-w-sm p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-2">
@@ -1415,11 +1452,114 @@
         const showExpenseModal = ref(false);
         const expenseForm = ref({ title: '', amount: null, category: '餐飲', paymentMethod: '現金', payer: '球', date: '10/16' });
 
+        // ==============================
+        // 照片／憑證預覽與下載
+        // ==============================
+        const showFilePreview = ref(false);
+        const previewUrl = ref('');
+        const previewType = ref('');
+        const previewName = ref('檔案');
+        const previewScale = ref(1);
+
+        const isImageFile = (url='', type='', name='') => {
+          const t = String(type || '').toLowerCase();
+          const n = String(name || '').toLowerCase();
+          const u = String(url || '').toLowerCase();
+          return t.startsWith('image/') || u.startsWith('data:image/') || /\.(jpe?g|png|gif|webp|bmp|heic)(\?|$)/i.test(n) || /\.(jpe?g|png|gif|webp|bmp|heic)(\?|$)/i.test(u);
+        };
+
+        const getFileLabel = (url='', type='', name='') => isImageFile(url,type,name) ? 'IMG' : 'PDF';
+
+        const openFilePreview = (url, type='image/*', name='檔案') => {
+          if(!url) return;
+          previewUrl.value = url;
+          previewType.value = type || (isImageFile(url,type,name) ? 'image/*' : 'application/pdf');
+          previewName.value = name || '檔案';
+          previewScale.value = 1;
+          showFilePreview.value = true;
+        };
+
+        const closeFilePreview = () => {
+          showFilePreview.value = false;
+          previewUrl.value = '';
+          previewType.value = '';
+          previewName.value = '檔案';
+          previewScale.value = 1;
+        };
+
+        const zoomInPreview = () => { previewScale.value = Math.min(3, +(previewScale.value + 0.25).toFixed(2)); };
+        const zoomOutPreview = () => { previewScale.value = Math.max(0.5, +(previewScale.value - 0.25).toFixed(2)); };
+        const resetPreviewZoom = () => { previewScale.value = 1; };
+        const togglePreviewZoom = () => { previewScale.value = previewScale.value >= 2.5 ? 1 : 2.5; };
+
+        const downloadFile = (targetUrl = previewUrl.value, targetName = previewName.value) => {
+          const url = String(targetUrl || '');
+          if(!url) return;
+          const safeName = String(targetName || '下載檔案').replace(/[\\/:*?"<>|]/g, '_');
+
+          // Data URL：直接下載
+          if(url.startsWith('data:')) {
+            try {
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = safeName;
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              return;
+            } catch(e) {
+              console.warn('Data URL 下載失敗', e);
+            }
+          }
+
+          // Supabase PUBLIC bucket：直接使用官方 ?download= 機制。
+          // 不再呼叫 storage.download()，避免被 storage.objects SELECT 權限擋住。
+          const marker = '/storage/v1/object/public/travel-files/';
+          const idx = url.indexOf(marker);
+          if(idx >= 0) {
+            try {
+              const storagePath = decodeURIComponent(url.substring(idx + marker.length).split('?')[0]);
+              let downloadUrl = url;
+
+              // 由 Supabase getPublicUrl 產生正式下載網址
+              if(window.supabase && supabaseClient) {
+                const result = supabaseClient.storage
+                  .from('travel-files')
+                  .getPublicUrl(storagePath, { download: safeName });
+                if(result && result.data && result.data.publicUrl) {
+                  downloadUrl = result.data.publicUrl;
+                }
+              }
+
+              // 保險：如果 getPublicUrl 沒有成功，就手動加上 download 參數
+              if(!/[?&]download=/.test(downloadUrl)) {
+                downloadUrl += (downloadUrl.includes('?') ? '&' : '?') + 'download=' + encodeURIComponent(safeName);
+              }
+
+              // 直接導向 Supabase 的下載網址，由伺服器回傳下載內容
+              window.location.href = downloadUrl;
+              return;
+            } catch(e) {
+              console.warn('Supabase 公開檔案下載失敗', e);
+            }
+          }
+
+          // 一般網址備援
+          try {
+            const downloadUrl = url + (url.includes('?') ? '&' : '?') + 'download=' + encodeURIComponent(safeName);
+            window.location.href = downloadUrl;
+            return;
+          } catch(e) {
+            console.warn('一般網址下載失敗', e);
+          }
+        };
+
         const showVoucherModal = ref(false);
-        const voucherForm = ref({ title: '', platform: '', fileName: '', file: '' });
+        const voucherForm = ref({ title: '', platform: '', fileName: '', fileType: '', file: '' });
 
         const showJournalModal = ref(false);
-        const journalForm = ref({ author: '球', date: '10/16 (五)', content: '', image: '' });
+        const journalForm = ref({ author: '球', date: '10/16 (五)', content: '', imageName: '', imageType: '', image: '' });
 
         const showFlightModal = ref(false);
         const flightForm = ref({
@@ -1434,13 +1574,33 @@
         const emergencyForm = ref({ police: '', office: '' });
 
         const openVoucherModal = () => {
-          voucherForm.value = { title: '', platform: '', fileName: '', file: '' };
+          voucherForm.value = { title: '', platform: '', fileName: '', fileType: '', file: '' };
           showVoucherModal.value = true;
         };
 
         let voucherUploadFile = null;
-        const handleVoucherFile = (event) => { const file=event.target.files[0]; if(file){ voucherUploadFile=file; voucherForm.value.fileName=file.name; const reader=new FileReader(); reader.onload=e=>voucherForm.value.file=e.target.result; reader.readAsDataURL(file); } };
-        const saveVoucher = async () => { let fileUrl=voucherForm.value.file; if(cloudReady.value&&voucherUploadFile){try{fileUrl=await uploadFileToCloud(voucherUploadFile,'vouchers');}catch(e){console.error(e);}} voucherList.value.unshift({id:'v-'+Date.now(),...voucherForm.value,file:fileUrl||''}); voucherUploadFile=null; showVoucherModal.value=false; saveData(); };
+        const handleVoucherFile = (event) => {
+          const file = event.target.files[0];
+          if(file){
+            voucherUploadFile = file;
+            voucherForm.value.fileName = file.name;
+            voucherForm.value.fileType = file.type || '';
+            const reader = new FileReader();
+            reader.onload = e => voucherForm.value.file = e.target.result;
+            reader.readAsDataURL(file);
+          }
+        };
+        const saveVoucher = async () => {
+          let fileUrl = voucherForm.value.file;
+          if(cloudReady.value && voucherUploadFile){
+            const cloudUrl = await uploadFileToCloud(voucherUploadFile, 'vouchers');
+            if(cloudUrl) fileUrl = cloudUrl;
+          }
+          voucherList.value.unshift({id:'v-'+Date.now(), ...voucherForm.value, file:fileUrl || ''});
+          voucherUploadFile = null;
+          showVoucherModal.value = false;
+          saveData();
+        };
 
         const deleteVoucher = (id) => {
           voucherList.value = voucherList.value.filter(v => v.id !== id);
@@ -1562,13 +1722,33 @@
         };
 
         const openJournalModal = () => {
-          journalForm.value = { author: '球', date: '10/16 (五)', content: '', image: '' };
+          journalForm.value = { author: '球', date: '10/16 (五)', content: '', imageName: '', imageType: '', image: '' };
           showJournalModal.value = true;
         };
 
         let journalUploadFile = null;
-        const handleJournalImage = (event) => { const file=event.target.files[0]; if(file){journalUploadFile=file; const reader=new FileReader(); reader.onload=e=>journalForm.value.image=e.target.result; reader.readAsDataURL(file);} };
-        const saveJournal = async () => { let imageUrl=journalForm.value.image; if(cloudReady.value&&journalUploadFile){try{imageUrl=await uploadFileToCloud(journalUploadFile,'journal');}catch(e){console.error(e);}} journalEntries.value.unshift({id:'j-'+Date.now(),...journalForm.value,image:imageUrl||''}); journalUploadFile=null; showJournalModal.value=false; saveData(); };
+        const handleJournalImage = (event) => {
+          const file = event.target.files[0];
+          if(file){
+            journalUploadFile = file;
+            journalForm.value.imageName = file.name;
+            journalForm.value.imageType = file.type || '';
+            const reader = new FileReader();
+            reader.onload = e => journalForm.value.image = e.target.result;
+            reader.readAsDataURL(file);
+          }
+        };
+        const saveJournal = async () => {
+          let imageUrl = journalForm.value.image;
+          if(cloudReady.value && journalUploadFile){
+            const cloudUrl = await uploadFileToCloud(journalUploadFile, 'journal');
+            if(cloudUrl) imageUrl = cloudUrl;
+          }
+          journalEntries.value.unshift({id:'j-'+Date.now(), ...journalForm.value, image:imageUrl || ''});
+          journalUploadFile = null;
+          showJournalModal.value = false;
+          saveData();
+        };
 
         const deleteJournal = (id) => {
           journalEntries.value = journalEntries.value.filter(j => j.id !== id);
@@ -1602,20 +1782,25 @@
           todoList: todoList.value,
           packingList: packingList.value,
           shoppingWishlist: shoppingWishlist.value,
-          journalEntries: journalEntries.value.map(j => ({
-            ...j,
-            image: j.image && j.image.startsWith('data:') ? '' : j.image
-          })),
+          journalEntries: journalEntries.value.map(j => ({ ...j })),
           flightInfo: flightInfo.value,
           hotelInfo: hotelInfo.value,
           emergencyContacts: emergencyContacts.value,
-          voucherList: voucherList.value.map(v => ({
-            ...v,
-            file: v.file && v.file.startsWith('data:') ? '' : v.file
-          })),
+          voucherList: voucherList.value.map(v => ({ ...v })),
           teamMembers: teamMembers.value,
           exchangeRate: exchangeRate.value
         });
+
+        const mergeMediaField = (cloudItems, localItems, field, nameField) => {
+          const localMap = new Map((localItems || []).map(x => [x.id, x]));
+          return (cloudItems || []).map(item => {
+            const local = localMap.get(item.id);
+            if(local && !item[field] && local[field]) {
+              return { ...local, ...item, [field]: local[field], [nameField]: item[nameField] || local[nameField] || '' };
+            }
+            return item;
+          });
+        };
 
         const applyCloudState = data => {
           if (!data) return;
@@ -1626,11 +1811,11 @@
             if(data.todoList) todoList.value = data.todoList;
             if(data.packingList) packingList.value = data.packingList;
             if(data.shoppingWishlist) shoppingWishlist.value = data.shoppingWishlist;
-            if(data.journalEntries) journalEntries.value = data.journalEntries;
+            if(data.journalEntries) journalEntries.value = mergeMediaField(data.journalEntries, journalEntries.value, 'image', 'imageName');
             if(data.flightInfo) flightInfo.value = data.flightInfo;
             if(data.hotelInfo) hotelInfo.value = data.hotelInfo;
             if(data.emergencyContacts) emergencyContacts.value = data.emergencyContacts;
-            if(data.voucherList) voucherList.value = data.voucherList;
+            if(data.voucherList) voucherList.value = mergeMediaField(data.voucherList, voucherList.value, 'file', 'fileName');
             if(data.teamMembers) teamMembers.value = data.teamMembers;
             if(typeof data.exchangeRate === 'number') exchangeRate.value = data.exchangeRate;
             saveLocalData();
@@ -1764,6 +1949,9 @@
                 .throwOnError();
             }
 
+            // 等雲端狀態套用後，再嘗試從 Storage 找回遺失的照片/憑證網址。
+            await recoverCloudMedia();
+
             realtimeChannel = supabaseClient
               .channel(`travel-room-${nextRoom}`)
               .on(
@@ -1854,6 +2042,37 @@
           }
         };
 
+        // 自動找回舊照片：即使之前雲端把 file/image 欄位存成空白，只要 Storage 還在，就依原檔名找回。
+        const recoverCloudMedia = async () => {
+          if(!cloudReady.value || !supabaseClient) return;
+          let changed = false;
+          const recoverFolder = async (folder, items, field, nameField) => {
+            const need = (items || []).filter(x => !x[field] && x[nameField]);
+            if(!need.length) return;
+            const base = `travelRooms/${roomId.value}/${folder}`;
+            try {
+              const { data: objects, error } = await supabaseClient.storage
+                .from('travel-files')
+                .list(base, { limit: 1000, sortBy: { column: 'name', order: 'desc' } });
+              if(error || !Array.isArray(objects)) {
+                console.warn('無法列出 Supabase Storage 檔案:', error);
+                return;
+              }
+              for(const item of need) {
+                const safe = String(item[nameField]).replace(/[^a-zA-Z0-9._-]/g,'_');
+                const match = objects.find(o => o && o.name && (o.name === safe || o.name.endsWith('_' + safe)));
+                if(!match) continue;
+                const path = `${base}/${match.name}`;
+                const { data } = supabaseClient.storage.from('travel-files').getPublicUrl(path);
+                if(data && data.publicUrl) { item[field] = data.publicUrl; changed = true; }
+              }
+            } catch(e) { console.warn('找回 Storage 媒體失敗:', e); }
+          };
+          await recoverFolder('vouchers', voucherList.value, 'file', 'fileName');
+          await recoverFolder('journal', journalEntries.value, 'image', 'imageName');
+          if(changed) { saveLocalData(); await syncToCloud(); }
+        };
+
         onMounted(() => { loadData(); initSupabase(); });
 
         return {
@@ -1931,6 +2150,20 @@
           handleJournalImage,
           saveJournal,
           deleteJournal,
+          showFilePreview,
+          previewUrl,
+          previewType,
+          previewName,
+          previewScale,
+          isImageFile,
+          getFileLabel,
+          openFilePreview,
+          downloadFile,
+          zoomInPreview,
+          zoomOutPreview,
+          resetPreviewZoom,
+          togglePreviewZoom,
+          closeFilePreview,
           openModalForCurrentTab,
           saveData,
           cloudReady,
